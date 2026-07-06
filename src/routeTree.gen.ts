@@ -9,38 +9,121 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProjectsNewRouteImport } from './routes/projects.new'
+import { Route as ProjectsIdIndexRouteImport } from './routes/projects.$id.index'
+import { Route as ProjectsIdStepRouteImport } from './routes/projects.$id.$step'
 
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BenchmarksRoute = BenchmarksRouteImport.update({
+  id: '/benchmarks',
+  path: '/benchmarks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsNewRoute = ProjectsNewRouteImport.update({
+  id: '/projects/new',
+  path: '/projects/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsIdIndexRoute = ProjectsIdIndexRouteImport.update({
+  id: '/projects/$id/',
+  path: '/projects/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsIdStepRoute = ProjectsIdStepRouteImport.update({
+  id: '/projects/$id/$step',
+  path: '/projects/$id/$step',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/benchmarks': typeof BenchmarksRoute
+  '/templates': typeof TemplatesRoute
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects/$id/$step': typeof ProjectsIdStepRoute
+  '/projects/$id/': typeof ProjectsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/benchmarks': typeof BenchmarksRoute
+  '/templates': typeof TemplatesRoute
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects/$id/$step': typeof ProjectsIdStepRoute
+  '/projects/$id': typeof ProjectsIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/benchmarks': typeof BenchmarksRoute
+  '/templates': typeof TemplatesRoute
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects/$id/$step': typeof ProjectsIdStepRoute
+  '/projects/$id/': typeof ProjectsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/benchmarks'
+    | '/templates'
+    | '/projects/new'
+    | '/projects/$id/$step'
+    | '/projects/$id/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/benchmarks'
+    | '/templates'
+    | '/projects/new'
+    | '/projects/$id/$step'
+    | '/projects/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/benchmarks'
+    | '/templates'
+    | '/projects/new'
+    | '/projects/$id/$step'
+    | '/projects/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BenchmarksRoute: typeof BenchmarksRoute
+  TemplatesRoute: typeof TemplatesRoute
+  ProjectsNewRoute: typeof ProjectsNewRoute
+  ProjectsIdStepRoute: typeof ProjectsIdStepRoute
+  ProjectsIdIndexRoute: typeof ProjectsIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/benchmarks': {
+      id: '/benchmarks'
+      path: '/benchmarks'
+      fullPath: '/benchmarks'
+      preLoaderRoute: typeof BenchmarksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +131,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/new': {
+      id: '/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof ProjectsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$id/': {
+      id: '/projects/$id/'
+      path: '/projects/$id'
+      fullPath: '/projects/$id/'
+      preLoaderRoute: typeof ProjectsIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$id/$step': {
+      id: '/projects/$id/$step'
+      path: '/projects/$id/$step'
+      fullPath: '/projects/$id/$step'
+      preLoaderRoute: typeof ProjectsIdStepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BenchmarksRoute: BenchmarksRoute,
+  TemplatesRoute: TemplatesRoute,
+  ProjectsNewRoute: ProjectsNewRoute,
+  ProjectsIdStepRoute: ProjectsIdStepRoute,
+  ProjectsIdIndexRoute: ProjectsIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
