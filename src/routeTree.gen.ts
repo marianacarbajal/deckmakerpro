@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsIdIndexRouteImport } from './routes/projects.$id.index'
 import { Route as ProjectsIdStepRouteImport } from './routes/projects.$id.$step'
 
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const ProjectsIdStepRoute = ProjectsIdStepRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
   '/projects/$id/': typeof ProjectsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
   '/projects/$id': typeof ProjectsIdIndexRoute
@@ -50,18 +58,30 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
   '/projects/$id/': typeof ProjectsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/projects/new' | '/projects/$id/$step' | '/projects/$id/'
+  fullPaths:
+    | '/'
+    | '/templates'
+    | '/projects/new'
+    | '/projects/$id/$step'
+    | '/projects/$id/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/projects/new' | '/projects/$id/$step' | '/projects/$id'
+  to:
+    | '/'
+    | '/templates'
+    | '/projects/new'
+    | '/projects/$id/$step'
+    | '/projects/$id'
   id:
     | '__root__'
     | '/'
+    | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
     | '/projects/$id/'
@@ -69,6 +89,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TemplatesRoute: typeof TemplatesRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsIdStepRoute: typeof ProjectsIdStepRoute
   ProjectsIdIndexRoute: typeof ProjectsIdIndexRoute
@@ -76,6 +97,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -109,6 +137,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TemplatesRoute: TemplatesRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   ProjectsIdStepRoute: ProjectsIdStepRoute,
   ProjectsIdIndexRoute: ProjectsIdIndexRoute,
