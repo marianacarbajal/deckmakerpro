@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsIdIndexRouteImport } from './routes/projects.$id.index'
@@ -18,6 +19,11 @@ import { Route as ProjectsIdStepRouteImport } from './routes/projects.$id.$step'
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BenchmarksRoute = BenchmarksRouteImport.update({
+  id: '/benchmarks',
+  path: '/benchmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,6 +49,7 @@ const ProjectsIdStepRoute = ProjectsIdStepRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/benchmarks': typeof BenchmarksRoute
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/benchmarks': typeof BenchmarksRoute
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/benchmarks': typeof BenchmarksRoute
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
@@ -67,6 +76,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/benchmarks'
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
@@ -74,6 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/benchmarks'
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
@@ -81,6 +92,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/benchmarks'
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
@@ -89,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BenchmarksRoute: typeof BenchmarksRoute
   TemplatesRoute: typeof TemplatesRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsIdStepRoute: typeof ProjectsIdStepRoute
@@ -102,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/benchmarks': {
+      id: '/benchmarks'
+      path: '/benchmarks'
+      fullPath: '/benchmarks'
+      preLoaderRoute: typeof BenchmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -137,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BenchmarksRoute: BenchmarksRoute,
   TemplatesRoute: TemplatesRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   ProjectsIdStepRoute: ProjectsIdStepRoute,
