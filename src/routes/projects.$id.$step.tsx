@@ -522,7 +522,16 @@ function Check({ ok, label }: { ok?: boolean; label: string }) {
 // ─────────────────────────────────────────── Prompt ─────────────────────
 
 function PromptStep({ project }: { project: Project }) {
-  const prompt = useMemo(() => buildPrompt(project), [project]);
+  const { getStructure, getProfile } = useLibrary();
+  const prompt = useMemo(
+    () =>
+      buildPrompt(project, {
+        structure: getStructure(project.general_information.presentationStructureId),
+        profile: getProfile(project.general_information.clientProfileId),
+      }),
+    [project, getStructure, getProfile],
+  );
+
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
