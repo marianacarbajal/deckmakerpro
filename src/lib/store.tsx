@@ -144,10 +144,9 @@ interface Ctx {
 const ProjectsContext = createContext<Ctx | null>(null);
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(() =>
-    typeof window === "undefined" ? seed() : []
-  );
+  const [projects, setProjects] = useState<Project[]>([]);
   const [hydrated, setHydrated] = useState(false);
+
 
   useEffect(() => {
     setProjects(load());
