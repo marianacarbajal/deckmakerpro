@@ -118,18 +118,103 @@ function NextBtn({ projectId, next, children }: { projectId: string; next: StepS
 
 function ContextStep({ project }: { project: Project }) {
   const { updateProject } = useProjects();
+  const { structures, profiles } = useLibrary();
   const ctx = project.study_context;
+  const gi = project.general_information;
 
   const update = (patch: Partial<typeof ctx>) => {
     updateProject(project.id, (p) => ({ ...p, study_context: { ...p.study_context, ...patch } }));
   };
+  const updateGi = (patch: Partial<GeneralInformation>) => {
+    updateProject(project.id, (p) => ({ ...p, general_information: { ...p.general_information, ...patch } }));
+  };
+
+  const availableChannels = gi.account ? CHANNELS_BY_ACCOUNT[gi.account as Account] : [];
+  const availableSubs = allSubcategoriesFor(gi.account || undefined, gi.channels);
+  const filteredProfiles = gi.account ? profiles.filter((p) => p.account === gi.account) : profiles;
 
   return (
     <StepFrame
       title="Contexto del estudio"
-      subtitle="Define el propósito, las preguntas del cliente y las hipótesis. InsightDeck usa este contexto para construir el prompt."
+      subtitle="Cuenta, canal, estructura, perfil de cliente y consideraciones estratégicas. Todo esto alimenta el Prompt Builder."
       primary={<NextBtn projectId={project.id} next="upload">Guardar y continuar →</NextBtn>}
     >
+      <Card className="p-8 space-y-6 mb-6">
+        <div>
+          <Label>Cuenta</Label>
+          <div className="flex flex-wrap gap-2">
+            {ACCOUNTS.map((a) => (
+              <button
+                type="button"
+                key={a}
+                onClick={() => updateGi({ account: a, channels: [], subcategories: [], clientProfileId: undefined })}
+                className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                  gi.account === a
+                    ? "bg-primary text-white border-primary shadow-sm"
+                    : "bg-white text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                }`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label>Canal (multi-selección)</Label>
+          <MultiChipSelect
+            options={availableChannels}
+            value={gi.channels}
+            onChange={(next) => {
+              const subs = allSubcategoriesFor(gi.account || undefined, next);
+              updateGi({ channels: next, subcategories: gi.subcategories.filter((s) => subs.includes(s)) });
+            }}
+            disabled={!gi.account}
+            emptyLabel="Selecciona una cuenta primero."
+          />
+        </div>
+
+        <div>
+          <Label>Subcategoría (multi-selección)</Label>
+          <MultiChipSelect
+            options={availableSubs}
+            value={gi.subcategories}
+            onChange={(v) => updateGi({ subcategories: v })}
+            disabled={gi.channels.length === 0}
+            emptyLabel={gi.account ? "Selecciona al menos un canal." : "Selecciona una cuenta primero."}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <Label>Presentation Structure</Label>
+            <select
+              value={gi.presentationStructureId ?? ""}
+              onChange={(e) => updateGi({ presentationStructureId: e.target.value || undefined })}
+              className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm outline-none"
+            >
+              <option value="">(sin estructura)</option>
+              {structures.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} · {s.studyType}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Client Profile</Label>
+            <select
+              value={gi.clientProfileId ?? ""}
+              onChange={(e) => updateGi({ clientProfileId: e.target.value || undefined })}
+              className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm outline-none"
+            >
+              <option value="">(sin perfil)</option>
+              {filteredProfiles.map((p) => (
+                <option key={p.id} value={p.id}>{p.name} ({p.account})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </Card>
+
       <Card className="p-8 space-y-6">
         <div>
           <Label>Objetivo general</Label>
@@ -138,7 +223,7 @@ function ContextStep({ project }: { project: Project }) {
             value={ctx.objective}
             onChange={(e) => update({ objective: e.target.value })}
             placeholder="Ej. Entender la evolución trimestral de la marca…"
-            className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+            className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm outline-none resize-none"
           />
         </div>
 
@@ -183,8 +268,22 @@ function ContextStep({ project }: { project: Project }) {
             value={ctx.clientQuestions}
             onChange={(e) => update({ clientQuestions: e.target.value })}
             placeholder="¿Perdimos share of voice…?"
-            className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none font-mono text-[13px] leading-relaxed"
+            className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm outline-none resize-none font-mono text-[13px] leading-relaxed"
           />
+        </div>
+
+        <div>
+          <Label>Consideraciones estratégicas</Label>
+          <textarea
+            rows={4}
+            value={ctx.considerations}
+            onChange={(e) => update({ considerations: e.target.value })}
+            placeholder='Ej. "Usar tono más directo, resaltar oportunidades comerciales, profundizar en canal moderno."'
+            className="w-full bg-white border border-primary/30 bg-primary/5 rounded-lg px-4 py-3 text-sm outline-none resize-none"
+          />
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            Instrucciones que modifican tono, foco y profundidad. Se inyectan en el prompt de análisis.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
@@ -195,7 +294,7 @@ function ContextStep({ project }: { project: Project }) {
               value={ctx.hypotheses}
               onChange={(e) => update({ hypotheses: e.target.value })}
               placeholder="Ej. La caída en preferencia se explica por precio percibido."
-              className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+              className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm outline-none resize-none"
             />
           </div>
           <div>
@@ -205,7 +304,7 @@ function ContextStep({ project }: { project: Project }) {
               value={ctx.notes}
               onChange={(e) => update({ notes: e.target.value })}
               placeholder="Notas para el equipo de análisis."
-              className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+              className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm outline-none resize-none"
             />
           </div>
         </div>
@@ -213,6 +312,7 @@ function ContextStep({ project }: { project: Project }) {
     </StepFrame>
   );
 }
+
 
 // ─────────────────────────────────────────── Carga ──────────────────────
 
