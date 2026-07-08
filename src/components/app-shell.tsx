@@ -3,9 +3,14 @@ import type { ReactNode } from "react";
 
 const NAV = [
   { to: "/", label: "Projects", match: (p: string) => p === "/" || p.startsWith("/projects") },
+  {
+    to: "/knowledge-library",
+    label: "Knowledge Library",
+    match: (p: string) => p.startsWith("/knowledge-library") || p.startsWith("/benchmarks"),
+  },
   { to: "/templates", label: "Template Library", match: (p: string) => p.startsWith("/templates") },
-  { to: "/benchmarks", label: "Benchmarks", match: (p: string) => p.startsWith("/benchmarks") },
 ] as const;
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
