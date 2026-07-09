@@ -13,6 +13,8 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ProjectsProvider } from "../lib/store";
 import { LibraryProvider } from "../lib/library-store";
+import { TemplateProvider } from "../lib/template-store";
+
 
 
 
