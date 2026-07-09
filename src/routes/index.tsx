@@ -158,8 +158,21 @@ function Dashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-muted-foreground text-xs">
-                          {new Date(p.updated_at).toLocaleDateString()}
+                          {(() => {
+                            const prog = workflowProgress(p.workflow ?? []);
+                            const stage = currentStage(p.workflow ?? []);
+                            if (!p.workflow?.length) return new Date(p.updated_at).toLocaleDateString();
+                            return (
+                              <div>
+                                <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary rounded-full" style={{ width: `${prog.pct}%` }} />
+                                </div>
+                                <div className="text-[10px] mt-1 truncate">{stage?.name ?? "—"} · {prog.pct}%</div>
+                              </div>
+                            );
+                          })()}
                         </td>
+
                         <td className="px-4 py-4 text-right">
                           <button
                             onClick={() => handleDelete(p.id, gi.name)}
