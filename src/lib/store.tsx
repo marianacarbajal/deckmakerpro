@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MOCK_PROJECTS } from "./mock-data";
 import type { Account } from "./account-taxonomy";
+import type { WorkflowStage } from "./pipeline";
+
 
 export interface UploadedFile {
   name: string;
@@ -30,6 +32,15 @@ export interface GeneralInformation {
   dueDate: string;
   presentationStructureId?: string;
   clientProfileId?: string;
+  selectedTemplateIds?: string[];
+}
+
+export interface SlideRevision {
+  at: string;
+  by: "user" | "ai";
+  summary: string;
+  before?: Partial<SlideData>;
+  after?: Partial<SlideData>;
 }
 
 export interface SlideData {
@@ -44,9 +55,18 @@ export interface SlideData {
   recommended_layout?: string;
   notes?: string;
   status?: "approved" | "pending" | "rejected";
+  data_source?: string;
+  visual_direction?: string;
+  revision_history?: SlideRevision[];
 }
 
 export type ProjectStatus = "draft" | "in_analysis" | "review" | "completed";
+
+export interface ExcelAnalysisState {
+  ranAt?: string;
+  completedStages: string[];
+  sheetsGenerated: string[];
+}
 
 export interface Project {
   id: string;
@@ -57,9 +77,12 @@ export interface Project {
   generated_slides: SlideData[];
   current_status: ProjectStatus;
   current_step: number;
+  workflow?: WorkflowStage[];
+  excel_analysis?: ExcelAnalysisState;
   created_at: string;
   updated_at: string;
 }
+
 
 const STORAGE_KEY = "insightdeck.projects.v2";
 const LEGACY_KEY = "insightdeck.projects.v1";

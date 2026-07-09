@@ -2,8 +2,9 @@ import { createFileRoute, Link, useNavigate, Navigate } from "@tanstack/react-ro
 import { AppShell } from "@/components/app-shell";
 import { ProjectHeader } from "@/components/project-header";
 import { STEPS, type StepSlug } from "@/lib/mock-data";
-import { useProjects, type Project, type SlideData, type GeneralInformation } from "@/lib/store";
+import { useProjects, type Project, type SlideData, type GeneralInformation, type SlideRevision } from "@/lib/store";
 import { useLibrary } from "@/lib/library-store";
+import { useTemplates } from "@/lib/template-store";
 import {
   ACCOUNTS,
   CHANNELS_BY_ACCOUNT,
@@ -14,7 +15,11 @@ import { MultiChipSelect } from "@/components/multi-chip-select";
 import { buildPrompt } from "@/lib/prompt-builder";
 import { validateJson } from "@/lib/json-validator";
 import { generatePptx } from "@/lib/pptx";
+import { EXCEL_STAGES, downloadExcelAnalitico, type ExcelStageState } from "@/lib/excel-engine";
+import { rewriteSlideWithAI } from "@/lib/rewrite-slide.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState, type ChangeEvent } from "react";
+
 
 
 export const Route = createFileRoute("/projects/$id/$step")({
@@ -309,9 +314,81 @@ function ContextStep({ project }: { project: Project }) {
           </div>
         </div>
       </Card>
+
+      <TemplateReferences project={project} />
     </StepFrame>
   );
 }
+
+function TemplateReferences({ project }: { project: Project }) {
+  const { updateProject } = useProjects();
+  const { templates } = useTemplates();
+  const gi = project.general_information;
+  const selected = gi.selectedTemplateIds ?? [];
+  const toggle = (id: string) => {
+    const next = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
+    updateProject(project.id, (p) => ({
+      ...p,
+      general_information: { ...p.general_information, selectedTemplateIds: next },
+    }));
+  };
+  const forAccount = templates.filter((t) => t.kind === "presentation" && (!gi.account || t.account === gi.account));
+  const slideTypes = templates.filter((t) => t.kind === "slide");
+
+  return (
+    <Card className="p-8 space-y-6 mt-6">
+      <div>
+        <Label>Referencias visuales · presentaciones</Label>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          Selecciona decks de la <Link to="/templates" className="underline">Template Library</Link> como
+          inspiración. No se copian literalmente; el prompt indica "usar como referencia".
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {forAccount.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => toggle(t.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                selected.includes(t.id)
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-muted-foreground border-border hover:border-primary/40"
+              }`}
+            >
+              {selected.includes(t.id) && "✓ "}
+              {t.name}
+            </button>
+          ))}
+          {forAccount.length === 0 && (
+            <div className="text-xs text-muted-foreground italic">Sin presentaciones para esta cuenta.</div>
+          )}
+        </div>
+      </div>
+      <div>
+        <Label>Referencias visuales · tipos de slide priorizados</Label>
+        <div className="flex flex-wrap gap-2">
+          {slideTypes.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => toggle(t.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                selected.includes(t.id)
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-muted-foreground border-border hover:border-primary/40"
+              }`}
+            >
+              {selected.includes(t.id) && "✓ "}
+              {t.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+
 
 
 // ─────────────────────────────────────────── Carga ──────────────────────
@@ -394,9 +471,109 @@ function UploadStep({ project }: { project: Project }) {
           </ul>
         </Card>
       </div>
+
+      <ExcelEngineCard project={project} />
     </StepFrame>
   );
 }
+
+function ExcelEngineCard({ project }: { project: Project }) {
+  const { updateProject } = useProjects();
+  const hasExcel = project.uploaded_files.some((f) => /xls|csv/i.test(f.kind));
+  const initial: ExcelStageState[] = EXCEL_STAGES.map((s) => ({
+    ...s,
+    status: project.excel_analysis?.completedStages.includes(s.id) ? "done" : "pending",
+  }));
+  const [stages, setStages] = useState<ExcelStageState[]>(initial);
+  const [running, setRunning] = useState(false);
+  const allDone = stages.every((s) => s.status === "done");
+
+  const run = async () => {
+    setRunning(true);
+    let next: ExcelStageState[] = stages.map((s) => ({ ...s, status: "pending" }));
+    setStages(next);
+    for (let i = 0; i < next.length; i++) {
+      next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "running" } : s));
+      setStages(next);
+      await new Promise((r) => setTimeout(r, 500));
+      next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "done" } : s));
+      setStages(next);
+    }
+    updateProject(project.id, (p) => ({
+      ...p,
+      excel_analysis: {
+        ranAt: new Date().toISOString(),
+        completedStages: EXCEL_STAGES.map((s) => s.id),
+        sheetsGenerated: EXCEL_STAGES.map((s) => s.sheetName!).filter(Boolean),
+      },
+    }));
+    setRunning(false);
+  };
+
+  return (
+    <Card className="p-8 mt-6">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-semibold">Motor de Excel Inteligente</h3>
+          <p className="text-[11px] text-muted-foreground mt-1 max-w-xl">
+            Analiza los Excel cargados y genera un <strong>Excel Analítico</strong> derivado con 8 hojas
+            trazables (base limpia, diccionario, homologaciones, tablas resumen, KPIs, dashboard, insights).
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={run}
+            disabled={running || !hasExcel}
+            className="px-3 py-2 text-xs font-semibold bg-primary text-white rounded-md disabled:opacity-40"
+          >
+            {running ? "Analizando…" : allDone ? "Volver a ejecutar" : "Ejecutar análisis"}
+          </button>
+          <button
+            onClick={() => downloadExcelAnalitico(project)}
+            disabled={!allDone}
+            className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface disabled:opacity-40"
+          >
+            ⬇ Descargar Excel Analítico
+          </button>
+        </div>
+      </div>
+      {!hasExcel && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          Carga un archivo .xlsx o .csv para habilitar el motor.
+        </p>
+      )}
+      <div className="grid grid-cols-4 gap-3 mt-4">
+        {stages.map((s) => (
+          <div
+            key={s.id}
+            className={`rounded-lg border p-3 text-xs transition-colors ${
+              s.status === "done"
+                ? "bg-emerald-50 border-emerald-200"
+                : s.status === "running"
+                  ? "bg-blue-50 border-blue-200 animate-pulse"
+                  : "bg-surface border-border"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold">{s.label}</span>
+              <span className="text-[10px] font-mono text-muted-foreground">
+                {s.status === "done" ? "✓" : s.status === "running" ? "…" : "·"}
+              </span>
+            </div>
+            <div className="text-[10px] text-muted-foreground leading-tight">{s.description}</div>
+            {s.sheetName && (
+              <div className="text-[9px] font-mono text-muted-foreground mt-1.5 truncate">
+                → {s.sheetName}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+
 
 function inferKind(name: string) {
   const ext = name.toLowerCase().split(".").pop() ?? "";
@@ -953,7 +1130,10 @@ function ReviewStep({ project }: { project: Project }) {
                     </ul>
                   </Card>
                 )}
+
+                <AiConsiderationsCard project={project} slide={slide} activeIdx={activeIdx} updateSlide={updateSlide} />
               </div>
+
             </div>
           </div>
         </div>
@@ -962,7 +1142,181 @@ function ReviewStep({ project }: { project: Project }) {
   );
 }
 
+function AiConsiderationsCard({
+  project,
+  slide,
+  activeIdx,
+  updateSlide,
+}: {
+  project: Project;
+  slide: SlideData;
+  activeIdx: number;
+  updateSlide: (idx: number, patch: Partial<SlideData>) => void;
+}) {
+  const rewrite = useServerFn(rewriteSlideWithAI);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<Awaited<ReturnType<typeof rewrite>> | null>(null);
+  const considerations = project.study_context.considerations ?? "";
+  const gi = project.general_information;
+
+  const generate = async () => {
+    if (!considerations.trim()) {
+      setError("Agrega consideraciones estratégicas en el paso Contexto.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    setPreview(null);
+    try {
+      const result = await rewrite({
+        data: {
+          considerations,
+          slide: {
+            slide_type: slide.slide_type,
+            title: slide.title,
+            subtitle: slide.subtitle,
+            main_insight: slide.main_insight,
+            business_implication: slide.business_implication,
+            supporting_insights: slide.supporting_insights,
+          },
+          projectContext: {
+            account: gi.account || undefined,
+            channels: gi.channels,
+            subcategories: gi.subcategories,
+            objective: project.study_context.objective,
+          },
+        },
+      });
+      setPreview(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const apply = () => {
+    if (!preview) return;
+    const revision: SlideRevision = {
+      at: new Date().toISOString(),
+      by: "ai",
+      summary: preview.change_summary,
+      before: {
+        title: slide.title,
+        main_insight: slide.main_insight,
+        business_implication: slide.business_implication,
+      },
+      after: {
+        title: preview.updated_title,
+        main_insight: preview.updated_insight,
+        business_implication: preview.updated_business_implication,
+      },
+    };
+    updateSlide(activeIdx, {
+      title: preview.updated_title,
+      main_insight: preview.updated_insight,
+      business_implication: preview.updated_business_implication,
+      visual_direction: preview.updated_visual_direction,
+      revision_history: [...(slide.revision_history ?? []), revision],
+    });
+    setPreview(null);
+  };
+
+  const saveWithoutApply = () => {
+    if (!preview) return;
+    const revision: SlideRevision = {
+      at: new Date().toISOString(),
+      by: "ai",
+      summary: `[Sugerencia no aplicada] ${preview.change_summary}`,
+    };
+    updateSlide(activeIdx, {
+      revision_history: [...(slide.revision_history ?? []), revision],
+    });
+    setPreview(null);
+  };
+
+  return (
+    <Card className="p-5 bg-primary/5 border-primary/20">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[11px] font-bold uppercase text-primary tracking-wide">
+          ✨ Consideraciones con IA
+        </div>
+        {slide.revision_history && slide.revision_history.length > 0 && (
+          <span className="text-[10px] text-muted-foreground">
+            {slide.revision_history.length} revisión{slide.revision_history.length === 1 ? "" : "es"}
+          </span>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
+        {considerations.trim()
+          ? "Reescribir el slide aplicando las consideraciones estratégicas del proyecto."
+          : "No hay consideraciones definidas. Agrega instrucciones en el paso Contexto."}
+      </p>
+      <button
+        onClick={generate}
+        disabled={loading || !considerations.trim()}
+        className="w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg disabled:opacity-40 mb-2"
+      >
+        {loading ? "Generando…" : "Generar propuesta con IA"}
+      </button>
+      {error && (
+        <div className="text-[11px] bg-rose-50 border border-rose-200 text-rose-700 rounded px-2 py-1.5 mt-2">
+          {error}
+        </div>
+      )}
+      {preview && (
+        <div className="mt-3 space-y-3 bg-white border border-border rounded-lg p-3">
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Nuevo título</div>
+            <div className="text-xs font-medium">{preview.updated_title}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Nuevo insight</div>
+            <div className="text-xs text-muted-foreground">{preview.updated_insight}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Implicancia</div>
+            <div className="text-xs text-muted-foreground">{preview.updated_business_implication}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Dirección visual</div>
+            <div className="text-xs text-muted-foreground italic">{preview.updated_visual_direction}</div>
+          </div>
+          <div className="flex gap-2 pt-2 border-t border-border">
+            <button onClick={apply} className="flex-1 py-1.5 text-[11px] font-semibold bg-emerald-600 text-white rounded">
+              Aplicar cambio
+            </button>
+            <button onClick={saveWithoutApply} className="flex-1 py-1.5 text-[11px] font-semibold border border-border rounded">
+              Guardar sin aplicar
+            </button>
+          </div>
+        </div>
+      )}
+      {slide.revision_history && slide.revision_history.length > 0 && (
+        <details className="mt-3">
+          <summary className="text-[10px] font-semibold text-muted-foreground cursor-pointer">
+            Historial de revisiones
+          </summary>
+          <ul className="mt-2 space-y-1.5">
+            {slide.revision_history.slice().reverse().map((r, i) => (
+              <li key={i} className="text-[10px] text-muted-foreground bg-white border border-border rounded p-2">
+                <div className="flex justify-between mb-0.5">
+                  <span className="font-semibold">{r.by === "ai" ? "🤖 IA" : "👤 Usuario"}</span>
+                  <span>{new Date(r.at).toLocaleString()}</span>
+                </div>
+                {r.summary}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Card>
+  );
+}
+
 function ConfigRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+
   return (
     <div className="flex items-center justify-between text-[11px]">
       <span className="text-muted-foreground">{label}</span>
@@ -1197,16 +1551,24 @@ function ExportStep({ project }: { project: Project }) {
 
           <Card className="p-6 space-y-3">
             <button
+              onClick={() => downloadExcelAnalitico(project)}
+              disabled={!project.excel_analysis}
+              className="w-full py-2.5 border border-border rounded-lg text-xs font-semibold hover:bg-surface disabled:opacity-50"
+            >
+              ⬇ Descargar Excel Analítico
+            </button>
+            <button
               onClick={downloadJson}
               disabled={slides.length === 0}
               className="w-full py-2.5 border border-border rounded-lg text-xs font-semibold hover:bg-surface disabled:opacity-50"
             >
-              ⬇ Descargar JSON
+              ⬇ Descargar JSON del proyecto
             </button>
             <Link to="/" className="block text-center py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
               Volver al dashboard
             </Link>
           </Card>
+
         </div>
       </div>
     </StepFrame>

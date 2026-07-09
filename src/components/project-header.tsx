@@ -21,17 +21,25 @@ export function ProjectHeader({ projectId, projectName, currentStep, action }: P
           <span className="text-muted-foreground text-xs">/</span>
           <span className="text-sm font-medium truncate">{projectName}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/projects/$id/pipeline"
+            params={{ id: projectId }}
+            className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface"
+          >
+            📋 Pipeline
+          </Link>
           {action ?? (
             <Link
-              to="/projects/$id/export"
-              params={{ id: projectId }}
+              to="/projects/$id/$step"
+              params={{ id: projectId, step: "export" }}
               className="px-4 py-2 text-xs font-semibold bg-primary text-white rounded-md shadow-sm hover:bg-primary-hover transition-all"
             >
               Exportar PowerPoint
             </Link>
           )}
         </div>
+
       </div>
 
       <div className="px-8 pb-3 flex items-center gap-1.5 overflow-x-auto">
