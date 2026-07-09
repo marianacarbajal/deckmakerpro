@@ -471,9 +471,109 @@ function UploadStep({ project }: { project: Project }) {
           </ul>
         </Card>
       </div>
+
+      <ExcelEngineCard project={project} />
     </StepFrame>
   );
 }
+
+function ExcelEngineCard({ project }: { project: Project }) {
+  const { updateProject } = useProjects();
+  const hasExcel = project.uploaded_files.some((f) => /xls|csv/i.test(f.kind));
+  const initial: ExcelStageState[] = EXCEL_STAGES.map((s) => ({
+    ...s,
+    status: project.excel_analysis?.completedStages.includes(s.id) ? "done" : "pending",
+  }));
+  const [stages, setStages] = useState<ExcelStageState[]>(initial);
+  const [running, setRunning] = useState(false);
+  const allDone = stages.every((s) => s.status === "done");
+
+  const run = async () => {
+    setRunning(true);
+    let next = stages.map((s) => ({ ...s, status: "pending" as const }));
+    setStages(next);
+    for (let i = 0; i < next.length; i++) {
+      next = next.map((s, j) => (j === i ? { ...s, status: "running" } : s));
+      setStages(next);
+      await new Promise((r) => setTimeout(r, 500));
+      next = next.map((s, j) => (j === i ? { ...s, status: "done" } : s));
+      setStages(next);
+    }
+    updateProject(project.id, (p) => ({
+      ...p,
+      excel_analysis: {
+        ranAt: new Date().toISOString(),
+        completedStages: EXCEL_STAGES.map((s) => s.id),
+        sheetsGenerated: EXCEL_STAGES.map((s) => s.sheetName!).filter(Boolean),
+      },
+    }));
+    setRunning(false);
+  };
+
+  return (
+    <Card className="p-8 mt-6">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-semibold">Motor de Excel Inteligente</h3>
+          <p className="text-[11px] text-muted-foreground mt-1 max-w-xl">
+            Analiza los Excel cargados y genera un <strong>Excel Analítico</strong> derivado con 8 hojas
+            trazables (base limpia, diccionario, homologaciones, tablas resumen, KPIs, dashboard, insights).
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={run}
+            disabled={running || !hasExcel}
+            className="px-3 py-2 text-xs font-semibold bg-primary text-white rounded-md disabled:opacity-40"
+          >
+            {running ? "Analizando…" : allDone ? "Volver a ejecutar" : "Ejecutar análisis"}
+          </button>
+          <button
+            onClick={() => downloadExcelAnalitico(project)}
+            disabled={!allDone}
+            className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface disabled:opacity-40"
+          >
+            ⬇ Descargar Excel Analítico
+          </button>
+        </div>
+      </div>
+      {!hasExcel && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          Carga un archivo .xlsx o .csv para habilitar el motor.
+        </p>
+      )}
+      <div className="grid grid-cols-4 gap-3 mt-4">
+        {stages.map((s) => (
+          <div
+            key={s.id}
+            className={`rounded-lg border p-3 text-xs transition-colors ${
+              s.status === "done"
+                ? "bg-emerald-50 border-emerald-200"
+                : s.status === "running"
+                  ? "bg-blue-50 border-blue-200 animate-pulse"
+                  : "bg-surface border-border"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold">{s.label}</span>
+              <span className="text-[10px] font-mono text-muted-foreground">
+                {s.status === "done" ? "✓" : s.status === "running" ? "…" : "·"}
+              </span>
+            </div>
+            <div className="text-[10px] text-muted-foreground leading-tight">{s.description}</div>
+            {s.sheetName && (
+              <div className="text-[9px] font-mono text-muted-foreground mt-1.5 truncate">
+                → {s.sheetName}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+
 
 function inferKind(name: string) {
   const ext = name.toLowerCase().split(".").pop() ?? "";
