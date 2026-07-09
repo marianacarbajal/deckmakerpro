@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MOCK_PROJECTS } from "./mock-data";
 import type { Account } from "./account-taxonomy";
+import type { WorkflowStage } from "./pipeline";
+
 
 export interface UploadedFile {
   name: string;
