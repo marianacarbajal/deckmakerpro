@@ -66,12 +66,12 @@ ${data.considerations}
 Reescribe el slide respetando las consideraciones. Mantén precisión de datos, tono ejecutivo y titulares de máx 90 caracteres. Devuelve exactamente los campos pedidos, sin markdown, en español.`;
 
     try {
-      const { experimental_output } = await generateText({
+      const { output } = await generateText({
         model,
         prompt,
-        experimental_output: Output.object({ schema: OutputSchema }),
+        output: Output.object({ schema: OutputSchema }),
       });
-      return experimental_output;
+      return output;
     } catch (error) {
       if (NoObjectGeneratedError.isInstance(error)) {
         throw new Error("La IA devolvió una respuesta no válida. Intenta de nuevo.");
