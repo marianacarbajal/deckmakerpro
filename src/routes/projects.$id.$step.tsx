@@ -490,13 +490,13 @@ function ExcelEngineCard({ project }: { project: Project }) {
 
   const run = async () => {
     setRunning(true);
-    let next = stages.map((s) => ({ ...s, status: "pending" as const }));
+    let next: ExcelStageState[] = stages.map((s) => ({ ...s, status: "pending" }));
     setStages(next);
     for (let i = 0; i < next.length; i++) {
-      next = next.map((s, j) => (j === i ? { ...s, status: "running" } : s));
+      next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "running" } : s));
       setStages(next);
       await new Promise((r) => setTimeout(r, 500));
-      next = next.map((s, j) => (j === i ? { ...s, status: "done" } : s));
+      next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "done" } : s));
       setStages(next);
     }
     updateProject(project.id, (p) => ({
