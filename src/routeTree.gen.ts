@@ -15,6 +15,7 @@ import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsIdIndexRouteImport } from './routes/projects.$id.index'
+import { Route as ProjectsIdPipelineRouteImport } from './routes/projects.$id.pipeline'
 import { Route as ProjectsIdStepRouteImport } from './routes/projects.$id.$step'
 
 const TemplatesRoute = TemplatesRouteImport.update({
@@ -47,6 +48,11 @@ const ProjectsIdIndexRoute = ProjectsIdIndexRouteImport.update({
   path: '/projects/$id/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsIdPipelineRoute = ProjectsIdPipelineRouteImport.update({
+  id: '/projects/$id/pipeline',
+  path: '/projects/$id/pipeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIdStepRoute = ProjectsIdStepRouteImport.update({
   id: '/projects/$id/$step',
   path: '/projects/$id/$step',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
+  '/projects/$id/pipeline': typeof ProjectsIdPipelineRoute
   '/projects/$id/': typeof ProjectsIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
+  '/projects/$id/pipeline': typeof ProjectsIdPipelineRoute
   '/projects/$id': typeof ProjectsIdIndexRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
+  '/projects/$id/pipeline': typeof ProjectsIdPipelineRoute
   '/projects/$id/': typeof ProjectsIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
+    | '/projects/$id/pipeline'
     | '/projects/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
+    | '/projects/$id/pipeline'
     | '/projects/$id'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
+    | '/projects/$id/pipeline'
     | '/projects/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   TemplatesRoute: typeof TemplatesRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsIdStepRoute: typeof ProjectsIdStepRoute
+  ProjectsIdPipelineRoute: typeof ProjectsIdPipelineRoute
   ProjectsIdIndexRoute: typeof ProjectsIdIndexRoute
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$id/pipeline': {
+      id: '/projects/$id/pipeline'
+      path: '/projects/$id/pipeline'
+      fullPath: '/projects/$id/pipeline'
+      preLoaderRoute: typeof ProjectsIdPipelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/$id/$step': {
       id: '/projects/$id/$step'
       path: '/projects/$id/$step'
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   TemplatesRoute: TemplatesRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   ProjectsIdStepRoute: ProjectsIdStepRoute,
+  ProjectsIdPipelineRoute: ProjectsIdPipelineRoute,
   ProjectsIdIndexRoute: ProjectsIdIndexRoute,
 }
 export const routeTree = rootRouteImport
