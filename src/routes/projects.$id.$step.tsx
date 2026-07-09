@@ -1142,7 +1142,181 @@ function ReviewStep({ project }: { project: Project }) {
   );
 }
 
+function AiConsiderationsCard({
+  project,
+  slide,
+  activeIdx,
+  updateSlide,
+}: {
+  project: Project;
+  slide: SlideData;
+  activeIdx: number;
+  updateSlide: (idx: number, patch: Partial<SlideData>) => void;
+}) {
+  const rewrite = useServerFn(rewriteSlideWithAI);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<Awaited<ReturnType<typeof rewrite>> | null>(null);
+  const considerations = project.study_context.considerations ?? "";
+  const gi = project.general_information;
+
+  const generate = async () => {
+    if (!considerations.trim()) {
+      setError("Agrega consideraciones estratégicas en el paso Contexto.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    setPreview(null);
+    try {
+      const result = await rewrite({
+        data: {
+          considerations,
+          slide: {
+            slide_type: slide.slide_type,
+            title: slide.title,
+            subtitle: slide.subtitle,
+            main_insight: slide.main_insight,
+            business_implication: slide.business_implication,
+            supporting_insights: slide.supporting_insights,
+          },
+          projectContext: {
+            account: gi.account || undefined,
+            channels: gi.channels,
+            subcategories: gi.subcategories,
+            objective: project.study_context.objective,
+          },
+        },
+      });
+      setPreview(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const apply = () => {
+    if (!preview) return;
+    const revision: SlideRevision = {
+      at: new Date().toISOString(),
+      by: "ai",
+      summary: preview.change_summary,
+      before: {
+        title: slide.title,
+        main_insight: slide.main_insight,
+        business_implication: slide.business_implication,
+      },
+      after: {
+        title: preview.updated_title,
+        main_insight: preview.updated_insight,
+        business_implication: preview.updated_business_implication,
+      },
+    };
+    updateSlide(activeIdx, {
+      title: preview.updated_title,
+      main_insight: preview.updated_insight,
+      business_implication: preview.updated_business_implication,
+      visual_direction: preview.updated_visual_direction,
+      revision_history: [...(slide.revision_history ?? []), revision],
+    });
+    setPreview(null);
+  };
+
+  const saveWithoutApply = () => {
+    if (!preview) return;
+    const revision: SlideRevision = {
+      at: new Date().toISOString(),
+      by: "ai",
+      summary: `[Sugerencia no aplicada] ${preview.change_summary}`,
+    };
+    updateSlide(activeIdx, {
+      revision_history: [...(slide.revision_history ?? []), revision],
+    });
+    setPreview(null);
+  };
+
+  return (
+    <Card className="p-5 bg-primary/5 border-primary/20">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[11px] font-bold uppercase text-primary tracking-wide">
+          ✨ Consideraciones con IA
+        </div>
+        {slide.revision_history && slide.revision_history.length > 0 && (
+          <span className="text-[10px] text-muted-foreground">
+            {slide.revision_history.length} revisión{slide.revision_history.length === 1 ? "" : "es"}
+          </span>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
+        {considerations.trim()
+          ? "Reescribir el slide aplicando las consideraciones estratégicas del proyecto."
+          : "No hay consideraciones definidas. Agrega instrucciones en el paso Contexto."}
+      </p>
+      <button
+        onClick={generate}
+        disabled={loading || !considerations.trim()}
+        className="w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg disabled:opacity-40 mb-2"
+      >
+        {loading ? "Generando…" : "Generar propuesta con IA"}
+      </button>
+      {error && (
+        <div className="text-[11px] bg-rose-50 border border-rose-200 text-rose-700 rounded px-2 py-1.5 mt-2">
+          {error}
+        </div>
+      )}
+      {preview && (
+        <div className="mt-3 space-y-3 bg-white border border-border rounded-lg p-3">
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Nuevo título</div>
+            <div className="text-xs font-medium">{preview.updated_title}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Nuevo insight</div>
+            <div className="text-xs text-muted-foreground">{preview.updated_insight}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Implicancia</div>
+            <div className="text-xs text-muted-foreground">{preview.updated_business_implication}</div>
+          </div>
+          <div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">Dirección visual</div>
+            <div className="text-xs text-muted-foreground italic">{preview.updated_visual_direction}</div>
+          </div>
+          <div className="flex gap-2 pt-2 border-t border-border">
+            <button onClick={apply} className="flex-1 py-1.5 text-[11px] font-semibold bg-emerald-600 text-white rounded">
+              Aplicar cambio
+            </button>
+            <button onClick={saveWithoutApply} className="flex-1 py-1.5 text-[11px] font-semibold border border-border rounded">
+              Guardar sin aplicar
+            </button>
+          </div>
+        </div>
+      )}
+      {slide.revision_history && slide.revision_history.length > 0 && (
+        <details className="mt-3">
+          <summary className="text-[10px] font-semibold text-muted-foreground cursor-pointer">
+            Historial de revisiones
+          </summary>
+          <ul className="mt-2 space-y-1.5">
+            {slide.revision_history.slice().reverse().map((r, i) => (
+              <li key={i} className="text-[10px] text-muted-foreground bg-white border border-border rounded p-2">
+                <div className="flex justify-between mb-0.5">
+                  <span className="font-semibold">{r.by === "ai" ? "🤖 IA" : "👤 Usuario"}</span>
+                  <span>{new Date(r.at).toLocaleString()}</span>
+                </div>
+                {r.summary}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Card>
+  );
+}
+
 function ConfigRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+
   return (
     <div className="flex items-center justify-between text-[11px]">
       <span className="text-muted-foreground">{label}</span>
