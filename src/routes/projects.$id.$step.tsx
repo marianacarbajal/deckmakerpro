@@ -314,9 +314,81 @@ function ContextStep({ project }: { project: Project }) {
           </div>
         </div>
       </Card>
+
+      <TemplateReferences project={project} />
     </StepFrame>
   );
 }
+
+function TemplateReferences({ project }: { project: Project }) {
+  const { updateProject } = useProjects();
+  const { templates } = useTemplates();
+  const gi = project.general_information;
+  const selected = gi.selectedTemplateIds ?? [];
+  const toggle = (id: string) => {
+    const next = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
+    updateProject(project.id, (p) => ({
+      ...p,
+      general_information: { ...p.general_information, selectedTemplateIds: next },
+    }));
+  };
+  const forAccount = templates.filter((t) => t.kind === "presentation" && (!gi.account || t.account === gi.account));
+  const slideTypes = templates.filter((t) => t.kind === "slide");
+
+  return (
+    <Card className="p-8 space-y-6 mt-6">
+      <div>
+        <Label>Referencias visuales · presentaciones</Label>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          Selecciona decks de la <Link to="/templates" className="underline">Template Library</Link> como
+          inspiración. No se copian literalmente; el prompt indica "usar como referencia".
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {forAccount.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => toggle(t.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                selected.includes(t.id)
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-muted-foreground border-border hover:border-primary/40"
+              }`}
+            >
+              {selected.includes(t.id) && "✓ "}
+              {t.name}
+            </button>
+          ))}
+          {forAccount.length === 0 && (
+            <div className="text-xs text-muted-foreground italic">Sin presentaciones para esta cuenta.</div>
+          )}
+        </div>
+      </div>
+      <div>
+        <Label>Referencias visuales · tipos de slide priorizados</Label>
+        <div className="flex flex-wrap gap-2">
+          {slideTypes.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => toggle(t.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                selected.includes(t.id)
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-muted-foreground border-border hover:border-primary/40"
+              }`}
+            >
+              {selected.includes(t.id) && "✓ "}
+              {t.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+
 
 
 // ─────────────────────────────────────────── Carga ──────────────────────
