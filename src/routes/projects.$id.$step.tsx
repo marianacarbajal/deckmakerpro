@@ -2,8 +2,9 @@ import { createFileRoute, Link, useNavigate, Navigate } from "@tanstack/react-ro
 import { AppShell } from "@/components/app-shell";
 import { ProjectHeader } from "@/components/project-header";
 import { STEPS, type StepSlug } from "@/lib/mock-data";
-import { useProjects, type Project, type SlideData, type GeneralInformation } from "@/lib/store";
+import { useProjects, type Project, type SlideData, type GeneralInformation, type SlideRevision } from "@/lib/store";
 import { useLibrary } from "@/lib/library-store";
+import { useTemplates } from "@/lib/template-store";
 import {
   ACCOUNTS,
   CHANNELS_BY_ACCOUNT,
@@ -14,7 +15,11 @@ import { MultiChipSelect } from "@/components/multi-chip-select";
 import { buildPrompt } from "@/lib/prompt-builder";
 import { validateJson } from "@/lib/json-validator";
 import { generatePptx } from "@/lib/pptx";
+import { EXCEL_STAGES, downloadExcelAnalitico, type ExcelStageState } from "@/lib/excel-engine";
+import { rewriteSlideWithAI } from "@/lib/rewrite-slide.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState, type ChangeEvent } from "react";
+
 
 
 export const Route = createFileRoute("/projects/$id/$step")({
