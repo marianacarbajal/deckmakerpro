@@ -1551,16 +1551,24 @@ function ExportStep({ project }: { project: Project }) {
 
           <Card className="p-6 space-y-3">
             <button
+              onClick={() => downloadExcelAnalitico(project)}
+              disabled={!project.excel_analysis}
+              className="w-full py-2.5 border border-border rounded-lg text-xs font-semibold hover:bg-surface disabled:opacity-50"
+            >
+              ⬇ Descargar Excel Analítico
+            </button>
+            <button
               onClick={downloadJson}
               disabled={slides.length === 0}
               className="w-full py-2.5 border border-border rounded-lg text-xs font-semibold hover:bg-surface disabled:opacity-50"
             >
-              ⬇ Descargar JSON
+              ⬇ Descargar JSON del proyecto
             </button>
             <Link to="/" className="block text-center py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
               Volver al dashboard
             </Link>
           </Card>
+
         </div>
       </div>
     </StepFrame>
