@@ -2,7 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { useProjects } from "@/lib/store";
 import { statusLabel, statusTone } from "@/lib/mock-data";
+import { workflowProgress, currentStage } from "@/lib/pipeline";
 import { useMemo, useState } from "react";
+
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
