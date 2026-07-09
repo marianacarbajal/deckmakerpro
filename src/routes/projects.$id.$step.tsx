@@ -1130,7 +1130,10 @@ function ReviewStep({ project }: { project: Project }) {
                     </ul>
                   </Card>
                 )}
+
+                <AiConsiderationsCard project={project} slide={slide} activeIdx={activeIdx} updateSlide={updateSlide} />
               </div>
+
             </div>
           </div>
         </div>
