@@ -87,12 +87,32 @@ Genera slides solo para las secciones que NO sean placeholder de otra área.`);
   }
 
   if (profile) {
-    sections.push(`## 8. Perfil de cliente (identidad visual)
+    sections.push(`## 8. Perfil de cliente
 - Cliente: ${profile.name} (${profile.account})
-- Colores: ${profile.colors.join(", ")}
+- Colores base: ${profile.colors.join(", ")}
 ${profile.typography ? `- Tipografía: ${profile.typography}` : ""}
 ${profile.toneOfVoice ? `- Tono: ${profile.toneOfVoice}` : ""}
 ${profile.visualStyle ? `- Estilo visual: ${profile.visualStyle}` : ""}`);
+  }
+
+  if (visualIdentity) {
+    sections.push(`## 8b. Visual Identity seleccionada
+- Nombre: ${visualIdentity.name} (${visualIdentity.account})
+- Paleta oficial HEX (usar exactamente estos colores en gráficos, títulos y highlights):
+${visualIdentity.colors.map((c, i) => `  ${i + 1}. ${c}`).join("\n")}
+${visualIdentity.notes ? `- Notas: ${visualIdentity.notes}` : ""}
+
+Reglas: usa el color #1 para acentos principales, el #2 para secundarios, el #3 para KPIs positivos, el #4 como fondo/soporte. Respeta la paleta en TODA la presentación.`);
+  }
+
+  if (templates && templates.length > 0) {
+    const pres = templates.filter((t) => t.kind === "presentation");
+    const slides = templates.filter((t) => t.kind === "slide");
+    sections.push(`## 8c. Referencias visuales (usar como inspiración, NO copiar literalmente)
+${pres.length ? `- Decks de referencia: ${pres.map((t) => t.name).join(", ")}` : ""}
+${slides.length ? `- Tipos de slide priorizados: ${slides.map((t) => `${t.slideType ?? t.name}`).join(", ")}` : ""}
+
+Alinéate con la lógica estructural y visual de estas referencias, pero adapta el contenido a los datos de este proyecto.`);
   }
 
   sections.push(`## 9. Instrucciones de análisis
