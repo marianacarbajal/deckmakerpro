@@ -1516,6 +1516,7 @@ function SlideThumbGraphic({ type, large }: { type: string; large?: boolean }) {
 
 function ExportStep({ project }: { project: Project }) {
   const { updateProject } = useProjects();
+  const { getVisualIdentity } = useTemplates();
   const [generating, setGenerating] = useState(false);
   const slides = project.generated_slides;
   const approved = slides.filter((s) => s.status === "approved").length;
@@ -1524,7 +1525,8 @@ function ExportStep({ project }: { project: Project }) {
     if (slides.length === 0) return;
     setGenerating(true);
     try {
-      await generatePptx(project);
+      const vi = getVisualIdentity(project.general_information.visualIdentityId);
+      await generatePptx(project, { paletteColors: vi?.colors });
       updateProject(project.id, (p) => ({ ...p, current_status: "completed" }));
     } finally {
       setGenerating(false);
