@@ -32,6 +32,7 @@ export interface GeneralInformation {
   dueDate: string;
   presentationStructureId?: string;
   clientProfileId?: string;
+  visualIdentityId?: string;
   selectedTemplateIds?: string[];
 }
 
