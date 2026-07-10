@@ -1308,7 +1308,7 @@ function AiConsiderationsCard({
     <Card className="p-5 bg-primary/5 border-primary/20">
       <div className="flex items-center justify-between mb-3">
         <div className="text-[11px] font-bold uppercase text-primary tracking-wide">
-          ✨ Consideraciones con IA
+          ✨ Revisión con IA · solo esta diapositiva
         </div>
         {slide.revision_history && slide.revision_history.length > 0 && (
           <span className="text-[10px] text-muted-foreground">
@@ -1316,17 +1316,23 @@ function AiConsiderationsCard({
           </span>
         )}
       </div>
-      <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
-        {considerations.trim()
-          ? "Reescribir el slide aplicando las consideraciones estratégicas del proyecto."
-          : "No hay consideraciones definidas. Agrega instrucciones en el paso Contexto."}
+      <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+        Escribe instrucciones específicas (cambia el insight, mejora el título, resume, sugiere otro gráfico…).
+        La IA modifica ÚNICAMENTE esta diapositiva.
       </p>
+      <textarea
+        value={instructions}
+        onChange={(e) => setInstructions(e.target.value)}
+        rows={3}
+        placeholder="Ej. Cambia el insight para enfatizar la caída de share. Resume el título en menos de 60 caracteres."
+        className="w-full bg-white border border-border rounded-md px-3 py-2 text-xs resize-none outline-none mb-2"
+      />
       <button
         onClick={generate}
-        disabled={loading || !considerations.trim()}
+        disabled={loading || (!instructions.trim() && !considerations.trim())}
         className="w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg disabled:opacity-40 mb-2"
       >
-        {loading ? "Generando…" : "Generar propuesta con IA"}
+        {loading ? "Actualizando…" : "Actualizar diapositiva con IA"}
       </button>
       {error && (
         <div className="text-[11px] bg-rose-50 border border-rose-200 text-rose-700 rounded px-2 py-1.5 mt-2">
