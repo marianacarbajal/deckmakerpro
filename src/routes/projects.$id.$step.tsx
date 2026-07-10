@@ -759,13 +759,16 @@ function Check({ ok, label }: { ok?: boolean; label: string }) {
 
 function PromptStep({ project }: { project: Project }) {
   const { getStructure, getProfile } = useLibrary();
+  const { getVisualIdentity, getMany } = useTemplates();
   const prompt = useMemo(
     () =>
       buildPrompt(project, {
         structure: getStructure(project.general_information.presentationStructureId),
         profile: getProfile(project.general_information.clientProfileId),
+        visualIdentity: getVisualIdentity(project.general_information.visualIdentityId),
+        templates: getMany(project.general_information.selectedTemplateIds ?? []),
       }),
-    [project, getStructure, getProfile],
+    [project, getStructure, getProfile, getVisualIdentity, getMany],
   );
 
   const [copied, setCopied] = useState(false);
