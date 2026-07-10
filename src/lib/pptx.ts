@@ -1,46 +1,39 @@
 import PptxGenJS from "pptxgenjs";
 import type { Project, SlideData } from "./store";
 
-const DEFAULT_PRIMARY = "2563EB";
-const DEFAULT_DARK = "0F172A";
-const DEFAULT_MUTED = "64748B";
-const DEFAULT_LIGHT = "F1F5F9";
+// Palette (mutable — reassigned per generatePptx call from the project's Visual Identity).
+let PRIMARY = "2563EB";
+let DARK = "0F172A";
+let MUTED = "64748B";
+let LIGHT = "F1F5F9";
 
-interface Palette {
-  primary: string;
-  dark: string;
-  muted: string;
-  light: string;
-}
-
-function hex(v?: string, fallback = "000000") {
+function hex(v: string | undefined, fallback: string) {
   if (!v) return fallback;
   return v.replace(/^#/, "").toUpperCase().padEnd(6, "0").slice(0, 6);
 }
 
-function paletteFrom(colors?: string[]): Palette {
+function applyPalette(colors?: string[]) {
   if (!colors || colors.length === 0) {
-    return { primary: DEFAULT_PRIMARY, dark: DEFAULT_DARK, muted: DEFAULT_MUTED, light: DEFAULT_LIGHT };
+    PRIMARY = "2563EB"; DARK = "0F172A"; MUTED = "64748B"; LIGHT = "F1F5F9";
+    return;
   }
-  return {
-    primary: hex(colors[0], DEFAULT_PRIMARY),
-    dark: hex(colors[1] ?? colors[0], DEFAULT_DARK),
-    muted: hex(colors[2] ?? colors[1], DEFAULT_MUTED),
-    light: hex(colors[3] ?? "F1F5F9", DEFAULT_LIGHT),
-  };
+  PRIMARY = hex(colors[0], "2563EB");
+  DARK = hex(colors[1] ?? colors[0], "0F172A");
+  MUTED = hex(colors[2] ?? colors[1], "64748B");
+  LIGHT = hex(colors[3] ?? "F1F5F9", "F1F5F9");
 }
 
 export async function generatePptx(project: Project, options: { paletteColors?: string[] } = {}): Promise<void> {
-  const P = paletteFrom(options.paletteColors);
+  applyPalette(options.paletteColors);
   const pptx = new PptxGenJS();
-  pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
+  pptx.layout = "LAYOUT_WIDE";
   pptx.title = project.general_information.name || "InsightDeck Pro";
   pptx.company = project.general_information.client || "";
 
-  addCover(pptx, project, P);
+  addCover(pptx, project);
 
   for (const slide of project.generated_slides) {
-    addContentSlide(pptx, slide, project, P);
+    addContentSlide(pptx, slide, project);
   }
 
   const safe = (project.general_information.name || "insightdeck")
