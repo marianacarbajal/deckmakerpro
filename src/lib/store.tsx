@@ -200,6 +200,8 @@ function migrateLegacy(raw: unknown): Project[] | null {
           dueDate: String(gi.dueDate ?? ""),
           presentationStructureId: gi.presentationStructureId as string | undefined,
           clientProfileId: gi.clientProfileId as string | undefined,
+          visualIdentityId: gi.visualIdentityId as string | undefined,
+          selectedTemplateIds: Array.isArray(gi.selectedTemplateIds) ? (gi.selectedTemplateIds as string[]) : undefined,
         },
         study_context: {
           ...base.study_context,
