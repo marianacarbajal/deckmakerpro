@@ -405,6 +405,12 @@ function UploadStep({ project }: { project: Project }) {
       size: f.size,
       kind: inferKind(f.name),
     }));
+    // Cache bytes in-memory for the real Excel engine.
+    Array.from(list).forEach((f) => {
+      if (/xlsx?|csv/i.test(f.name)) {
+        f.arrayBuffer().then((buf) => putFileBytes(project.id, f.name, buf)).catch(() => {});
+      }
+    });
     updateProject(project.id, (p) => ({ ...p, uploaded_files: [...p.uploaded_files, ...added] }));
   };
 
