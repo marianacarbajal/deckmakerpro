@@ -221,6 +221,31 @@ function ContextStep({ project }: { project: Project }) {
             </select>
           </div>
         </div>
+        <div>
+          <Label>Visual Identity (paleta HEX)</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={gi.visualIdentityId ?? ""}
+              onChange={(e) => updateGi({ visualIdentityId: e.target.value || undefined })}
+              className="flex-1 min-w-[220px] bg-white border border-border rounded-lg px-4 py-2.5 text-sm outline-none"
+            >
+              <option value="">(sin identidad)</option>
+              {availableVI.map((v) => (
+                <option key={v.id} value={v.id}>{v.name} ({v.account})</option>
+              ))}
+            </select>
+            {gi.visualIdentityId && (
+              <div className="flex items-center gap-1">
+                {(availableVI.find((v) => v.id === gi.visualIdentityId)?.colors ?? []).slice(0, 6).map((c, i) => (
+                  <span key={i} className="size-6 rounded border border-border" style={{ background: c }} title={c} />
+                ))}
+              </div>
+            )}
+            <Link to="/templates" search={{ tab: "visual" }} className="text-[11px] font-semibold text-primary hover:underline">
+              Administrar en Template Library →
+            </Link>
+          </div>
+        </div>
       </Card>
 
       <Card className="p-8 space-y-6">
