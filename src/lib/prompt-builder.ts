@@ -13,7 +13,7 @@ export function buildPrompt(project: Project, options: PromptBuilderOptions = {}
   const gi = project.general_information;
   const ctx = project.study_context;
   const files = project.uploaded_files;
-  const { structure, profile } = options;
+  const { structure, profile, visualIdentity, templates } = options;
 
   const sections: string[] = [];
 
