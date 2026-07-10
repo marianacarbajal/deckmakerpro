@@ -50,7 +50,9 @@ function Templates() {
       </div>
       <div className="flex-1 overflow-y-auto bg-surface">
         <div className="max-w-6xl mx-auto p-8 animate-in-slide">
-          {tab === "presentations" ? <PresentationsTab /> : <SlidesTab />}
+          {tab === "presentations" && <PresentationsTab />}
+          {tab === "slides" && <SlidesTab />}
+          {tab === "visual" && <VisualIdentityTab />}
         </div>
       </div>
     </AppShell>
