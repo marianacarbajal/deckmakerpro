@@ -1,21 +1,46 @@
 import PptxGenJS from "pptxgenjs";
 import type { Project, SlideData } from "./store";
 
-const PRIMARY = "2563EB";
-const DARK = "0F172A";
-const MUTED = "64748B";
-const LIGHT = "F1F5F9";
+const DEFAULT_PRIMARY = "2563EB";
+const DEFAULT_DARK = "0F172A";
+const DEFAULT_MUTED = "64748B";
+const DEFAULT_LIGHT = "F1F5F9";
 
-export async function generatePptx(project: Project): Promise<void> {
+interface Palette {
+  primary: string;
+  dark: string;
+  muted: string;
+  light: string;
+}
+
+function hex(v?: string, fallback = "000000") {
+  if (!v) return fallback;
+  return v.replace(/^#/, "").toUpperCase().padEnd(6, "0").slice(0, 6);
+}
+
+function paletteFrom(colors?: string[]): Palette {
+  if (!colors || colors.length === 0) {
+    return { primary: DEFAULT_PRIMARY, dark: DEFAULT_DARK, muted: DEFAULT_MUTED, light: DEFAULT_LIGHT };
+  }
+  return {
+    primary: hex(colors[0], DEFAULT_PRIMARY),
+    dark: hex(colors[1] ?? colors[0], DEFAULT_DARK),
+    muted: hex(colors[2] ?? colors[1], DEFAULT_MUTED),
+    light: hex(colors[3] ?? "F1F5F9", DEFAULT_LIGHT),
+  };
+}
+
+export async function generatePptx(project: Project, options: { paletteColors?: string[] } = {}): Promise<void> {
+  const P = paletteFrom(options.paletteColors);
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
   pptx.title = project.general_information.name || "InsightDeck Pro";
   pptx.company = project.general_information.client || "";
 
-  addCover(pptx, project);
+  addCover(pptx, project, P);
 
   for (const slide of project.generated_slides) {
-    addContentSlide(pptx, slide, project);
+    addContentSlide(pptx, slide, project, P);
   }
 
   const safe = (project.general_information.name || "insightdeck")
