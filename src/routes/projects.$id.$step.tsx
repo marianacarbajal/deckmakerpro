@@ -125,6 +125,7 @@ function NextBtn({ projectId, next, children }: { projectId: string; next: StepS
 function ContextStep({ project }: { project: Project }) {
   const { updateProject } = useProjects();
   const { structures, profiles } = useLibrary();
+  const { visualIdentitiesForAccount } = useTemplates();
   const ctx = project.study_context;
   const gi = project.general_information;
 
@@ -138,6 +139,7 @@ function ContextStep({ project }: { project: Project }) {
   const availableChannels = gi.account ? CHANNELS_BY_ACCOUNT[gi.account as Account] : [];
   const availableSubs = allSubcategoriesFor(gi.account || undefined, gi.channels);
   const filteredProfiles = gi.account ? profiles.filter((p) => p.account === gi.account) : profiles;
+  const availableVI = visualIdentitiesForAccount(gi.account);
 
   return (
     <StepFrame
