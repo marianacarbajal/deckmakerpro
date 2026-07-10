@@ -497,25 +497,45 @@ function ExcelEngineCard({ project }: { project: Project }) {
 
   const run = async () => {
     setRunning(true);
+    const bytes = firstExcelBytes(project);
     let next: ExcelStageState[] = stages.map((s) => ({ ...s, status: "pending" }));
     setStages(next);
     for (let i = 0; i < next.length; i++) {
       next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "running" } : s));
       setStages(next);
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 350));
       next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "done" } : s));
       setStages(next);
     }
-    updateProject(project.id, (p) => ({
-      ...p,
-      excel_analysis: {
-        ranAt: new Date().toISOString(),
-        completedStages: EXCEL_STAGES.map((s) => s.id),
-        sheetsGenerated: EXCEL_STAGES.map((s) => s.sheetName!).filter(Boolean),
-      },
-    }));
+    if (bytes) {
+      try {
+        const result = runExcelEngine(bytes, project);
+        downloadWorkbook(result.wb, project.general_information.name || "insightdeck");
+        updateProject(project.id, (p) => ({
+          ...p,
+          excel_analysis: {
+            ranAt: new Date().toISOString(),
+            completedStages: result.stagesDone,
+            sheetsGenerated: result.sheetsGenerated,
+          },
+        }));
+      } catch (e) {
+        console.error("Excel engine error", e);
+      }
+    } else {
+      updateProject(project.id, (p) => ({
+        ...p,
+        excel_analysis: {
+          ranAt: new Date().toISOString(),
+          completedStages: EXCEL_STAGES.map((s) => s.id),
+          sheetsGenerated: EXCEL_STAGES.map((s) => s.sheetName!).filter(Boolean),
+        },
+      }));
+    }
     setRunning(false);
   };
+
+  const bytesCached = project.uploaded_files.some((f) => /xls|csv/i.test(f.kind) && hasFileBytes(project.id, f.name));
 
   return (
     <Card className="p-8 mt-6">
@@ -523,8 +543,8 @@ function ExcelEngineCard({ project }: { project: Project }) {
         <div>
           <h3 className="text-sm font-semibold">Motor de Excel Inteligente</h3>
           <p className="text-[11px] text-muted-foreground mt-1 max-w-xl">
-            Analiza los Excel cargados y genera un <strong>Excel Analítico</strong> derivado con 8 hojas
-            trazables (base limpia, diccionario, homologaciones, tablas resumen, KPIs, dashboard, insights).
+            Lee el Excel cargado, detecta hojas y variables, y genera un <strong>Excel Analítico</strong>{" "}
+            derivado con fórmulas SUMIF/AVERAGEIF/COUNTIF referenciando la base limpia, KPIs, dashboard e insights.
           </p>
         </div>
         <div className="flex gap-2">
@@ -533,17 +553,22 @@ function ExcelEngineCard({ project }: { project: Project }) {
             disabled={running || !hasExcel}
             className="px-3 py-2 text-xs font-semibold bg-primary text-white rounded-md disabled:opacity-40"
           >
-            {running ? "Analizando…" : allDone ? "Volver a ejecutar" : "Ejecutar análisis"}
+            {running ? "Analizando…" : allDone ? "Volver a ejecutar y descargar" : "Ejecutar y descargar analítico"}
           </button>
           <button
             onClick={() => downloadExcelAnalitico(project)}
             disabled={!allDone}
             className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface disabled:opacity-40"
           >
-            ⬇ Descargar Excel Analítico
+            ⬇ Volver a descargar
           </button>
         </div>
       </div>
+      {hasExcel && !bytesCached && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-2">
+          Los bytes del archivo se perdieron al recargar la página. Vuelve a cargar el .xlsx para regenerar el analítico real.
+        </p>
+      )}
       {!hasExcel && (
         <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
           Carga un archivo .xlsx o .csv para habilitar el motor.
