@@ -1,9 +1,12 @@
 import type { Project } from "./store";
 import type { PresentationStructure, ClientProfile } from "./library-store";
+import type { TemplateAsset, VisualIdentity } from "./template-store";
 
 export interface PromptBuilderOptions {
   structure?: PresentationStructure;
   profile?: ClientProfile;
+  visualIdentity?: VisualIdentity;
+  templates?: TemplateAsset[];
 }
 
 export function buildPrompt(project: Project, options: PromptBuilderOptions = {}): string {
