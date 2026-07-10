@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { useTemplates, SLIDE_TYPES, type TemplateAsset } from "@/lib/template-store";
+import { useTemplates, SLIDE_TYPES, type TemplateAsset, type VisualIdentity } from "@/lib/template-store";
 import { ACCOUNTS, type Account } from "@/lib/account-taxonomy";
 import { useState } from "react";
 
 export const Route = createFileRoute("/templates")({
   head: () => ({ meta: [{ title: "Template Library · InsightDeck Pro" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (["presentations", "slides"] as const).includes(s.tab as "presentations")
-      ? (s.tab as "presentations" | "slides")
+    tab: (["presentations", "slides", "visual"] as const).includes(s.tab as "presentations")
+      ? (s.tab as "presentations" | "slides" | "visual")
       : "presentations",
   }),
   component: Templates,
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/templates")({
 const TABS = [
   { id: "presentations", label: "Presentaciones por cuenta" },
   { id: "slides", label: "Slides por tipo" },
+  { id: "visual", label: "Visual Identity" },
 ] as const;
 
 function Templates() {
