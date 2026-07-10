@@ -1219,12 +1219,16 @@ function AiConsiderationsCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<Awaited<ReturnType<typeof rewrite>> | null>(null);
+  const [instructions, setInstructions] = useState("");
   const considerations = project.study_context.considerations ?? "";
   const gi = project.general_information;
+  const { getVisualIdentity } = useTemplates();
+  const vi = getVisualIdentity(gi.visualIdentityId);
 
   const generate = async () => {
-    if (!considerations.trim()) {
-      setError("Agrega consideraciones estratégicas en el paso Contexto.");
+    const combined = instructions.trim() || considerations.trim();
+    if (!combined) {
+      setError("Escribe instrucciones específicas para esta diapositiva (o agrega consideraciones en Contexto).");
       return;
     }
     setError(null);
@@ -1233,7 +1237,8 @@ function AiConsiderationsCard({
     try {
       const result = await rewrite({
         data: {
-          considerations,
+          considerations: considerations || instructions,
+          instructions: instructions.trim() || undefined,
           slide: {
             slide_type: slide.slide_type,
             title: slide.title,
@@ -1247,6 +1252,7 @@ function AiConsiderationsCard({
             channels: gi.channels,
             subcategories: gi.subcategories,
             objective: project.study_context.objective,
+            visualIdentity: vi ? { name: vi.name, colors: vi.colors } : undefined,
           },
         },
       });
