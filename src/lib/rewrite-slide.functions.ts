@@ -5,6 +5,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const InputSchema = z.object({
   considerations: z.string().min(1),
+  instructions: z.string().optional(),
   slide: z.object({
     slide_type: z.string(),
     title: z.string(),
@@ -19,6 +20,9 @@ const InputSchema = z.object({
       channels: z.array(z.string()).optional(),
       subcategories: z.array(z.string()).optional(),
       objective: z.string().optional(),
+      visualIdentity: z
+        .object({ name: z.string(), colors: z.array(z.string()) })
+        .optional(),
     })
     .optional(),
 });
