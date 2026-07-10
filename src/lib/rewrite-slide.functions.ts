@@ -5,6 +5,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const InputSchema = z.object({
   considerations: z.string().min(1),
+  instructions: z.string().optional(),
   slide: z.object({
     slide_type: z.string(),
     title: z.string(),
@@ -19,6 +20,9 @@ const InputSchema = z.object({
       channels: z.array(z.string()).optional(),
       subcategories: z.array(z.string()).optional(),
       objective: z.string().optional(),
+      visualIdentity: z
+        .object({ name: z.string(), colors: z.array(z.string()) })
+        .optional(),
     })
     .optional(),
 });
@@ -49,8 +53,11 @@ CONTEXTO DEL PROYECTO:
 - Canales: ${(data.projectContext?.channels ?? []).join(", ") || "n/d"}
 - Subcategorías: ${(data.projectContext?.subcategories ?? []).join(", ") || "n/d"}
 - Objetivo: ${data.projectContext?.objective ?? "n/d"}
+${data.projectContext?.visualIdentity
+        ? `- Visual Identity: ${data.projectContext.visualIdentity.name} (paleta HEX: ${data.projectContext.visualIdentity.colors.join(", ")})`
+        : ""}
 
-SLIDE ACTUAL:
+SLIDE ACTUAL (esta es la ÚNICA diapositiva a modificar; no toques el resto de la presentación):
 - Tipo: ${data.slide.slide_type}
 - Título: ${data.slide.title}
 - Subtítulo: ${data.slide.subtitle ?? ""}
@@ -58,12 +65,18 @@ SLIDE ACTUAL:
 - Implicancia de negocio: ${data.slide.business_implication ?? ""}
 - Insights de apoyo: ${(data.slide.supporting_insights ?? []).join(" | ")}
 
-CONSIDERACIONES ESTRATÉGICAS DEL USUARIO A APLICAR:
+CONSIDERACIONES ESTRATÉGICAS GLOBALES DEL PROYECTO:
 """
 ${data.considerations}
 """
+${data.instructions?.trim()
+        ? `INSTRUCCIONES ESPECÍFICAS DEL USUARIO PARA ESTA DIAPOSITIVA (prioritarias):
+"""
+${data.instructions}
+"""`
+        : ""}
 
-Reescribe el slide respetando las consideraciones. Mantén precisión de datos, tono ejecutivo y titulares de máx 90 caracteres. Devuelve exactamente los campos pedidos, sin markdown, en español.`;
+Reescribe SOLO esta diapositiva. Mantén precisión de datos, tono ejecutivo y titulares de máx 90 caracteres. Devuelve exactamente los campos pedidos, sin markdown, en español.`;
 
     try {
       const { output } = await generateText({

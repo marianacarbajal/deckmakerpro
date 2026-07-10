@@ -15,7 +15,8 @@ import { MultiChipSelect } from "@/components/multi-chip-select";
 import { buildPrompt } from "@/lib/prompt-builder";
 import { validateJson } from "@/lib/json-validator";
 import { generatePptx } from "@/lib/pptx";
-import { EXCEL_STAGES, downloadExcelAnalitico, type ExcelStageState } from "@/lib/excel-engine";
+import { EXCEL_STAGES, downloadExcelAnalitico, downloadWorkbook, firstExcelBytes, runExcelEngine, type ExcelStageState } from "@/lib/excel-engine";
+import { putFileBytes, hasFileBytes } from "@/lib/file-cache";
 import { rewriteSlideWithAI } from "@/lib/rewrite-slide.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState, type ChangeEvent } from "react";
@@ -124,6 +125,7 @@ function NextBtn({ projectId, next, children }: { projectId: string; next: StepS
 function ContextStep({ project }: { project: Project }) {
   const { updateProject } = useProjects();
   const { structures, profiles } = useLibrary();
+  const { visualIdentitiesForAccount } = useTemplates();
   const ctx = project.study_context;
   const gi = project.general_information;
 
@@ -137,6 +139,7 @@ function ContextStep({ project }: { project: Project }) {
   const availableChannels = gi.account ? CHANNELS_BY_ACCOUNT[gi.account as Account] : [];
   const availableSubs = allSubcategoriesFor(gi.account || undefined, gi.channels);
   const filteredProfiles = gi.account ? profiles.filter((p) => p.account === gi.account) : profiles;
+  const availableVI = visualIdentitiesForAccount(gi.account);
 
   return (
     <StepFrame
@@ -216,6 +219,31 @@ function ContextStep({ project }: { project: Project }) {
                 <option key={p.id} value={p.id}>{p.name} ({p.account})</option>
               ))}
             </select>
+          </div>
+        </div>
+        <div>
+          <Label>Visual Identity (paleta HEX)</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={gi.visualIdentityId ?? ""}
+              onChange={(e) => updateGi({ visualIdentityId: e.target.value || undefined })}
+              className="flex-1 min-w-[220px] bg-white border border-border rounded-lg px-4 py-2.5 text-sm outline-none"
+            >
+              <option value="">(sin identidad)</option>
+              {availableVI.map((v) => (
+                <option key={v.id} value={v.id}>{v.name} ({v.account})</option>
+              ))}
+            </select>
+            {gi.visualIdentityId && (
+              <div className="flex items-center gap-1">
+                {(availableVI.find((v) => v.id === gi.visualIdentityId)?.colors ?? []).slice(0, 6).map((c, i) => (
+                  <span key={i} className="size-6 rounded border border-border" style={{ background: c }} title={c} />
+                ))}
+              </div>
+            )}
+            <Link to="/templates" search={{ tab: "visual" }} className="text-[11px] font-semibold text-primary hover:underline">
+              Administrar en Template Library →
+            </Link>
           </div>
         </div>
       </Card>
@@ -404,6 +432,12 @@ function UploadStep({ project }: { project: Project }) {
       size: f.size,
       kind: inferKind(f.name),
     }));
+    // Cache bytes in-memory for the real Excel engine.
+    Array.from(list).forEach((f) => {
+      if (/xlsx?|csv/i.test(f.name)) {
+        f.arrayBuffer().then((buf) => putFileBytes(project.id, f.name, buf)).catch(() => {});
+      }
+    });
     updateProject(project.id, (p) => ({ ...p, uploaded_files: [...p.uploaded_files, ...added] }));
   };
 
@@ -490,25 +524,45 @@ function ExcelEngineCard({ project }: { project: Project }) {
 
   const run = async () => {
     setRunning(true);
+    const bytes = firstExcelBytes(project);
     let next: ExcelStageState[] = stages.map((s) => ({ ...s, status: "pending" }));
     setStages(next);
     for (let i = 0; i < next.length; i++) {
       next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "running" } : s));
       setStages(next);
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 350));
       next = next.map((s, j): ExcelStageState => (j === i ? { ...s, status: "done" } : s));
       setStages(next);
     }
-    updateProject(project.id, (p) => ({
-      ...p,
-      excel_analysis: {
-        ranAt: new Date().toISOString(),
-        completedStages: EXCEL_STAGES.map((s) => s.id),
-        sheetsGenerated: EXCEL_STAGES.map((s) => s.sheetName!).filter(Boolean),
-      },
-    }));
+    if (bytes) {
+      try {
+        const result = runExcelEngine(bytes, project);
+        downloadWorkbook(result.wb, project.general_information.name || "insightdeck");
+        updateProject(project.id, (p) => ({
+          ...p,
+          excel_analysis: {
+            ranAt: new Date().toISOString(),
+            completedStages: result.stagesDone,
+            sheetsGenerated: result.sheetsGenerated,
+          },
+        }));
+      } catch (e) {
+        console.error("Excel engine error", e);
+      }
+    } else {
+      updateProject(project.id, (p) => ({
+        ...p,
+        excel_analysis: {
+          ranAt: new Date().toISOString(),
+          completedStages: EXCEL_STAGES.map((s) => s.id),
+          sheetsGenerated: EXCEL_STAGES.map((s) => s.sheetName!).filter(Boolean),
+        },
+      }));
+    }
     setRunning(false);
   };
+
+  const bytesCached = project.uploaded_files.some((f) => /xls|csv/i.test(f.kind) && hasFileBytes(project.id, f.name));
 
   return (
     <Card className="p-8 mt-6">
@@ -516,8 +570,8 @@ function ExcelEngineCard({ project }: { project: Project }) {
         <div>
           <h3 className="text-sm font-semibold">Motor de Excel Inteligente</h3>
           <p className="text-[11px] text-muted-foreground mt-1 max-w-xl">
-            Analiza los Excel cargados y genera un <strong>Excel Analítico</strong> derivado con 8 hojas
-            trazables (base limpia, diccionario, homologaciones, tablas resumen, KPIs, dashboard, insights).
+            Lee el Excel cargado, detecta hojas y variables, y genera un <strong>Excel Analítico</strong>{" "}
+            derivado con fórmulas SUMIF/AVERAGEIF/COUNTIF referenciando la base limpia, KPIs, dashboard e insights.
           </p>
         </div>
         <div className="flex gap-2">
@@ -526,17 +580,22 @@ function ExcelEngineCard({ project }: { project: Project }) {
             disabled={running || !hasExcel}
             className="px-3 py-2 text-xs font-semibold bg-primary text-white rounded-md disabled:opacity-40"
           >
-            {running ? "Analizando…" : allDone ? "Volver a ejecutar" : "Ejecutar análisis"}
+            {running ? "Analizando…" : allDone ? "Volver a ejecutar y descargar" : "Ejecutar y descargar analítico"}
           </button>
           <button
             onClick={() => downloadExcelAnalitico(project)}
             disabled={!allDone}
             className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface disabled:opacity-40"
           >
-            ⬇ Descargar Excel Analítico
+            ⬇ Volver a descargar
           </button>
         </div>
       </div>
+      {hasExcel && !bytesCached && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-2">
+          Los bytes del archivo se perdieron al recargar la página. Vuelve a cargar el .xlsx para regenerar el analítico real.
+        </p>
+      )}
       {!hasExcel && (
         <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
           Carga un archivo .xlsx o .csv para habilitar el motor.
@@ -700,13 +759,16 @@ function Check({ ok, label }: { ok?: boolean; label: string }) {
 
 function PromptStep({ project }: { project: Project }) {
   const { getStructure, getProfile } = useLibrary();
+  const { getVisualIdentity, getMany } = useTemplates();
   const prompt = useMemo(
     () =>
       buildPrompt(project, {
         structure: getStructure(project.general_information.presentationStructureId),
         profile: getProfile(project.general_information.clientProfileId),
+        visualIdentity: getVisualIdentity(project.general_information.visualIdentityId),
+        templates: getMany(project.general_information.selectedTemplateIds ?? []),
       }),
-    [project, getStructure, getProfile],
+    [project, getStructure, getProfile, getVisualIdentity, getMany],
   );
 
   const [copied, setCopied] = useState(false);
@@ -1157,12 +1219,16 @@ function AiConsiderationsCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<Awaited<ReturnType<typeof rewrite>> | null>(null);
+  const [instructions, setInstructions] = useState("");
   const considerations = project.study_context.considerations ?? "";
   const gi = project.general_information;
+  const { getVisualIdentity } = useTemplates();
+  const vi = getVisualIdentity(gi.visualIdentityId);
 
   const generate = async () => {
-    if (!considerations.trim()) {
-      setError("Agrega consideraciones estratégicas en el paso Contexto.");
+    const combined = instructions.trim() || considerations.trim();
+    if (!combined) {
+      setError("Escribe instrucciones específicas para esta diapositiva (o agrega consideraciones en Contexto).");
       return;
     }
     setError(null);
@@ -1171,7 +1237,8 @@ function AiConsiderationsCard({
     try {
       const result = await rewrite({
         data: {
-          considerations,
+          considerations: considerations || instructions,
+          instructions: instructions.trim() || undefined,
           slide: {
             slide_type: slide.slide_type,
             title: slide.title,
@@ -1185,6 +1252,7 @@ function AiConsiderationsCard({
             channels: gi.channels,
             subcategories: gi.subcategories,
             objective: project.study_context.objective,
+            visualIdentity: vi ? { name: vi.name, colors: vi.colors } : undefined,
           },
         },
       });
@@ -1240,7 +1308,7 @@ function AiConsiderationsCard({
     <Card className="p-5 bg-primary/5 border-primary/20">
       <div className="flex items-center justify-between mb-3">
         <div className="text-[11px] font-bold uppercase text-primary tracking-wide">
-          ✨ Consideraciones con IA
+          ✨ Revisión con IA · solo esta diapositiva
         </div>
         {slide.revision_history && slide.revision_history.length > 0 && (
           <span className="text-[10px] text-muted-foreground">
@@ -1248,17 +1316,23 @@ function AiConsiderationsCard({
           </span>
         )}
       </div>
-      <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
-        {considerations.trim()
-          ? "Reescribir el slide aplicando las consideraciones estratégicas del proyecto."
-          : "No hay consideraciones definidas. Agrega instrucciones en el paso Contexto."}
+      <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+        Escribe instrucciones específicas (cambia el insight, mejora el título, resume, sugiere otro gráfico…).
+        La IA modifica ÚNICAMENTE esta diapositiva.
       </p>
+      <textarea
+        value={instructions}
+        onChange={(e) => setInstructions(e.target.value)}
+        rows={3}
+        placeholder="Ej. Cambia el insight para enfatizar la caída de share. Resume el título en menos de 60 caracteres."
+        className="w-full bg-white border border-border rounded-md px-3 py-2 text-xs resize-none outline-none mb-2"
+      />
       <button
         onClick={generate}
-        disabled={loading || !considerations.trim()}
+        disabled={loading || (!instructions.trim() && !considerations.trim())}
         className="w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg disabled:opacity-40 mb-2"
       >
-        {loading ? "Generando…" : "Generar propuesta con IA"}
+        {loading ? "Actualizando…" : "Actualizar diapositiva con IA"}
       </button>
       {error && (
         <div className="text-[11px] bg-rose-50 border border-rose-200 text-rose-700 rounded px-2 py-1.5 mt-2">
@@ -1454,6 +1528,7 @@ function SlideThumbGraphic({ type, large }: { type: string; large?: boolean }) {
 
 function ExportStep({ project }: { project: Project }) {
   const { updateProject } = useProjects();
+  const { getVisualIdentity } = useTemplates();
   const [generating, setGenerating] = useState(false);
   const slides = project.generated_slides;
   const approved = slides.filter((s) => s.status === "approved").length;
@@ -1462,7 +1537,8 @@ function ExportStep({ project }: { project: Project }) {
     if (slides.length === 0) return;
     setGenerating(true);
     try {
-      await generatePptx(project);
+      const vi = getVisualIdentity(project.general_information.visualIdentityId);
+      await generatePptx(project, { paletteColors: vi?.colors });
       updateProject(project.id, (p) => ({ ...p, current_status: "completed" }));
     } finally {
       setGenerating(false);
