@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { ProjectHeader } from "@/components/project-header";
 import { useProjects } from "@/lib/store";
 import { useLibrary } from "@/lib/library-store";
+import { useOrg } from "@/lib/org-store";
 import {
   WORKFLOW_STATUSES,
   downloadPipelineXlsx,
@@ -20,8 +21,6 @@ export const Route = createFileRoute("/projects/$id/pipeline")({
   head: () => ({ meta: [{ title: "Pipeline · InsightDeck Pro" }] }),
   component: PipelinePage,
 });
-
-const AREAS = ["Investigación", "Estrategia", "Propuesta", "Branding", "Marketing", "Ventas", "Comercial", "QA", "Dirección"];
 
 function PipelinePage() {
   const { id } = Route.useParams();
