@@ -230,24 +230,30 @@ function PipelinePage() {
           )}
 
           {stages.length > 0 && (
-            <div className="bg-white border border-border rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white border border-border rounded-xl overflow-x-auto">
+              <table className="min-w-[1100px] w-full text-sm">
                 <thead className="bg-surface text-[10px] uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="text-left px-4 py-3 font-semibold w-10">#</th>
-                    <th className="text-left px-4 py-3 font-semibold">Sección</th>
-                    <th className="text-left px-4 py-3 font-semibold">Área</th>
-                    <th className="text-left px-4 py-3 font-semibold">Estado</th>
-                    <th className="text-left px-4 py-3 font-semibold">Responsable</th>
-                    <th className="text-left px-4 py-3 font-semibold">Fecha límite</th>
-                    <th className="text-left px-4 py-3 font-semibold">% Avance</th>
-                    <th className="text-left px-4 py-3 font-semibold">Comentario</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[220px]">Sección</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[140px]">Área</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[130px]">Estado</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[150px]">Responsable</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[130px]">Fecha límite</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[130px]">% Avance</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[240px]">Comentario</th>
                     <th className="w-10" />
                   </tr>
                 </thead>
                 <tbody>
                   {stages.map((s, i) => {
                     const meta = statusMeta(s.status);
+                    const ownerOptions = s.owner && !ownerNames.includes(s.owner)
+                      ? [s.owner, ...ownerNames]
+                      : ownerNames;
+                    const areaOptions = s.responsibleArea && !AREAS.includes(s.responsibleArea)
+                      ? [s.responsibleArea, ...AREAS]
+                      : AREAS;
                     return (
                       <tr key={s.id} className="border-t border-border">
                         <td className="px-4 py-3 text-muted-foreground text-xs">{i + 1}</td>
@@ -264,7 +270,7 @@ function PipelinePage() {
                             className="text-xs bg-transparent outline-none border-b border-transparent focus:border-primary/40"
                           >
                             <option value="">—</option>
-                            {AREAS.map((a) => (
+                            {areaOptions.map((a) => (
                               <option key={a} value={a}>{a}</option>
                             ))}
                           </select>
@@ -281,12 +287,16 @@ function PipelinePage() {
                           </select>
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <select
                             value={s.owner ?? ""}
                             onChange={(e) => setStage(s.id, { owner: e.target.value })}
-                            placeholder="—"
-                            className="w-28 bg-transparent text-xs outline-none border-b border-transparent focus:border-primary/40"
-                          />
+                            className="text-xs bg-transparent outline-none border-b border-transparent focus:border-primary/40"
+                          >
+                            <option value="">—</option>
+                            {ownerOptions.map((o) => (
+                              <option key={o} value={o}>{o}</option>
+                            ))}
+                          </select>
                         </td>
                         <td className="px-4 py-3">
                           <input
@@ -314,7 +324,7 @@ function PipelinePage() {
                             value={s.comment ?? ""}
                             onChange={(e) => setStage(s.id, { comment: e.target.value })}
                             placeholder="Notas…"
-                            className="w-48 bg-transparent text-xs outline-none border-b border-transparent focus:border-primary/40"
+                            className="w-full min-w-[220px] bg-transparent text-xs outline-none border-b border-transparent focus:border-primary/40"
                           />
                         </td>
                         <td className="px-4 py-3 text-right">
