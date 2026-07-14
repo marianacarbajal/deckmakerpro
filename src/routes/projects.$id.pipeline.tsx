@@ -94,7 +94,14 @@ function PipelinePage() {
   };
 
   const exportXlsx = () =>
-    downloadPipelineXlsx(project.general_information.name || "insightdeck", stages);
+    downloadPipelineXlsx(project.general_information.name || "insightdeck", stages, {
+      projectName: project.general_information.name || "Sin nombre",
+      client: project.general_information.client,
+      account: project.general_information.account || undefined,
+      presentationStructure: structure?.name ?? structures.find((s) => s.id === project.general_information.presentationStructureId)?.name,
+      owner: project.general_information.owner,
+      date: new Date().toLocaleDateString(),
+    });
 
   const progress = workflowProgress(stages);
 
