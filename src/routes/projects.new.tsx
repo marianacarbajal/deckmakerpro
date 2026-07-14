@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { useProjects } from "@/lib/store";
 import { useLibrary } from "@/lib/library-store";
+import { useOrg } from "@/lib/org-store";
 import { ACCOUNTS, CHANNELS_BY_ACCOUNT, allSubcategoriesFor, type Account } from "@/lib/account-taxonomy";
 import { MultiChipSelect } from "@/components/multi-chip-select";
 import { useMemo, useState } from "react";
@@ -15,6 +16,7 @@ function NewProject() {
   const navigate = useNavigate();
   const { createProject } = useProjects();
   const { structures, profiles } = useLibrary();
+  const { ownerNames } = useOrg();
 
   const [form, setForm] = useState({
     name: "",
@@ -24,7 +26,7 @@ function NewProject() {
     channels: [] as string[],
     subcategories: [] as string[],
     researchType: "Brand Tracking",
-    owner: "Ana Martínez",
+    owner: ownerNames[0] ?? "",
     dueDate: "",
     presentationStructureId: "",
     clientProfileId: "",
@@ -167,7 +169,7 @@ function NewProject() {
                 label="Responsable"
                 value={form.owner}
                 onChange={(v) => set("owner", v)}
-                options={["Ana Martínez", "Carlos Ruiz", "María López", "Diego Salas"]}
+                options={ownerNames.length ? ownerNames : [""]}
               />
             </div>
 
