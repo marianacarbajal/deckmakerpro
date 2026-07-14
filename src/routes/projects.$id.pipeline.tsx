@@ -25,7 +25,9 @@ export const Route = createFileRoute("/projects/$id/pipeline")({
 function PipelinePage() {
   const { id } = Route.useParams();
   const { getProject, updateProject } = useProjects();
-  const { getStructure } = useLibrary();
+  const { getStructure, structures } = useLibrary();
+  const { areaNames, ownerNames } = useOrg();
+  const AREAS = areaNames;
   const project = getProject(id);
 
   const structure = getStructure(project?.general_information.presentationStructureId);
@@ -38,7 +40,7 @@ function PipelinePage() {
   const [showNew, setShowNew] = useState(false);
   const [draft, setDraft] = useState<{ name: string; responsibleArea: string; owner: string; status: WorkflowStatus; dueDate: string; comment: string }>({
     name: "",
-    responsibleArea: AREAS[0],
+    responsibleArea: AREAS[0] ?? "",
     owner: "",
     status: "not_started",
     dueDate: "",
