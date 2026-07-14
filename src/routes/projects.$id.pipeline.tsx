@@ -174,12 +174,16 @@ function PipelinePage() {
                   <option key={a} value={a}>{a}</option>
                 ))}
               </select>
-              <input
-                placeholder="Responsable"
+              <select
                 value={draft.owner}
                 onChange={(e) => setDraft({ ...draft, owner: e.target.value })}
                 className="bg-white border border-border rounded-md px-3 py-2"
-              />
+              >
+                <option value="">Responsable…</option>
+                {ownerNames.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
               <select
                 value={draft.status}
                 onChange={(e) => setDraft({ ...draft, status: e.target.value as WorkflowStatus })}
