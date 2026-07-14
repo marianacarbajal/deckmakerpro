@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ProjectsProvider } from "../lib/store";
 import { LibraryProvider } from "../lib/library-store";
 import { TemplateProvider } from "../lib/template-store";
+import { OrgProvider } from "../lib/org-store";
 
 
 
@@ -142,8 +143,10 @@ function RootComponent() {
       <ProjectsProvider>
         <LibraryProvider>
           <TemplateProvider>
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
+            <OrgProvider>
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </OrgProvider>
           </TemplateProvider>
         </LibraryProvider>
       </ProjectsProvider>
