@@ -9,6 +9,7 @@ const NAV = [
     match: (p: string) => p.startsWith("/knowledge-library") || p.startsWith("/benchmarks"),
   },
   { to: "/templates", label: "Template Library", match: (p: string) => p.startsWith("/templates") },
+  { to: "/settings", label: "Configuración", match: (p: string) => p.startsWith("/settings") },
 ] as const;
 
 

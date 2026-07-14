@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as KnowledgeLibraryRouteImport } from './routes/knowledge-library'
 import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,6 +22,11 @@ import { Route as ProjectsIdStepRouteImport } from './routes/projects.$id.$step'
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KnowledgeLibraryRoute = KnowledgeLibraryRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/benchmarks': typeof BenchmarksRoute
   '/knowledge-library': typeof KnowledgeLibraryRoute
+  '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/benchmarks': typeof BenchmarksRoute
   '/knowledge-library': typeof KnowledgeLibraryRoute
+  '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/benchmarks': typeof BenchmarksRoute
   '/knowledge-library': typeof KnowledgeLibraryRoute
+  '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/$id/$step': typeof ProjectsIdStepRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/benchmarks'
     | '/knowledge-library'
+    | '/settings'
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/benchmarks'
     | '/knowledge-library'
+    | '/settings'
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/benchmarks'
     | '/knowledge-library'
+    | '/settings'
     | '/templates'
     | '/projects/new'
     | '/projects/$id/$step'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BenchmarksRoute: typeof BenchmarksRoute
   KnowledgeLibraryRoute: typeof KnowledgeLibraryRoute
+  SettingsRoute: typeof SettingsRoute
   TemplatesRoute: typeof TemplatesRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsIdStepRoute: typeof ProjectsIdStepRoute
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/knowledge-library': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BenchmarksRoute: BenchmarksRoute,
   KnowledgeLibraryRoute: KnowledgeLibraryRoute,
+  SettingsRoute: SettingsRoute,
   TemplatesRoute: TemplatesRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   ProjectsIdStepRoute: ProjectsIdStepRoute,

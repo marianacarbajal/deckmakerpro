@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 import type { PresentationStructure } from "./library-store";
 
 export type WorkflowStatus = "not_started" | "in_progress" | "review" | "completed" | "blocked";
@@ -97,41 +97,285 @@ export function stageProgressPct(status: WorkflowStatus) {
   return Math.round(STATUS_WEIGHT[status] * 100);
 }
 
-export function downloadPipelineXlsx(fileBase: string, stages: WorkflowStage[]) {
-  const rows = stages.map((s, i) => ({
-    "#": i + 1,
-    Etapa: s.name,
-    "Sección padre": s.parentName ?? "",
-    "Área responsable": s.responsibleArea ?? "",
-    Responsable: s.owner ?? "",
-    Estado: statusMeta(s.status).label,
-    "Fecha límite": s.dueDate ?? "",
-    "Inicio": s.startedAt ? new Date(s.startedAt).toLocaleDateString() : "",
-    "Completado": s.completedAt ? new Date(s.completedAt).toLocaleDateString() : "",
-    "% avance": stageProgressPct(s.status),
-    Comentarios: s.comment ?? "",
-    Actualizado: new Date(s.updatedAt).toLocaleString(),
-  }));
+// ────────────────────────────────────────────────────────────────
+// Executive tracker export
+// ────────────────────────────────────────────────────────────────
+
+export interface PipelineExportMeta {
+  projectName: string;
+  client?: string;
+  account?: string;
+  presentationStructure?: string;
+  owner?: string;
+  date?: string;
+}
+
+// Palette matches the reference template.
+const NAVY = "2F4A67";
+const NAVY_SOFT = "E9EEF5";
+const WHITE = "FFFFFF";
+const TEXT_DARK = "1F2937";
+const TEXT_MUTED = "6B7280";
+const GREEN = "5BAE74";
+const AMBER = "F59E0B";
+const RED = "DC2626";
+const BLUE_LIGHT = "DBEAFE";
+const GRAY_LIGHT = "F3F4F6";
+
+const STATUS_FILL: Record<WorkflowStatus, string> = {
+  not_started: GRAY_LIGHT,
+  in_progress: BLUE_LIGHT,
+  review: "FEF3C7",
+  completed: "D1FAE5",
+  blocked: "FEE2E2",
+};
+const STATUS_TEXT: Record<WorkflowStatus, string> = {
+  not_started: TEXT_MUTED,
+  in_progress: "1E40AF",
+  review: "92400E",
+  completed: "065F46",
+  blocked: "991B1B",
+};
+
+const border = (color = "D1D5DB") => ({
+  top: { style: "thin", color: { rgb: color } },
+  bottom: { style: "thin", color: { rgb: color } },
+  left: { style: "thin", color: { rgb: color } },
+  right: { style: "thin", color: { rgb: color } },
+});
+
+const FONT_BASE = { name: "Calibri" };
+
+function styled(value: string | number, style: Record<string, unknown>) {
+  return { v: value, t: typeof value === "number" ? "n" : "s", s: style };
+}
+
+function setCell(ws: XLSX.WorkSheet, addr: string, cell: unknown) {
+  ws[addr] = cell;
+}
+
+function ensureRef(ws: XLSX.WorkSheet, addr: string) {
+  const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
+  const cur = XLSX.utils.decode_cell(addr);
+  if (cur.r > range.e.r) range.e.r = cur.r;
+  if (cur.c > range.e.c) range.e.c = cur.c;
+  ws["!ref"] = XLSX.utils.encode_range(range);
+}
+
+export function downloadPipelineXlsx(
+  fileBase: string,
+  stages: WorkflowStage[],
+  meta: PipelineExportMeta = { projectName: fileBase },
+) {
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const ws: XLSX.WorkSheet = { "!ref": "A1" };
+
+  // Column widths: A-P
   ws["!cols"] = [
-    { wch: 4 }, { wch: 32 }, { wch: 24 }, { wch: 20 }, { wch: 18 },
-    { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 },
-    { wch: 40 }, { wch: 18 },
+    { wch: 22 }, { wch: 26 }, { wch: 22 }, { wch: 24 },
+    { wch: 6 },  { wch: 12 }, { wch: 14 }, { wch: 8 },
+    { wch: 12 }, { wch: 8 },  { wch: 14 }, { wch: 8 },
+    { wch: 14 }, { wch: 8 },  { wch: 14 }, { wch: 8 },
   ];
-  XLSX.utils.book_append_sheet(wb, ws, "Pipeline");
+
+  // Row heights
+  ws["!rows"] = [{ hpt: 30 }, { hpt: 22 }];
 
   const done = stages.filter((s) => s.status === "completed").length;
-  const summary = [
-    { KPI: "Etapas totales", Valor: stages.length },
-    { KPI: "Completadas", Valor: done },
-    { KPI: "En progreso", Valor: stages.filter((s) => s.status === "in_progress").length },
-    { KPI: "En revisión", Valor: stages.filter((s) => s.status === "review").length },
-    { KPI: "Bloqueadas", Valor: stages.filter((s) => s.status === "blocked").length },
-    { KPI: "No iniciadas", Valor: stages.filter((s) => s.status === "not_started").length },
-    { KPI: "% Global", Valor: stages.length ? Math.round((done / stages.length) * 100) : 0 },
-  ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Resumen");
+  const total = stages.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const blocked = stages.filter((s) => s.status === "blocked").length;
+  const pending = total - done - blocked;
 
-  XLSX.writeFile(wb, `${fileBase.replace(/\s+/g, "_") || "pipeline"}__pipeline.xlsx`);
+  const kpiHeader = {
+    font: { ...FONT_BASE, bold: true, color: { rgb: WHITE }, sz: 10 },
+    fill: { patternType: "solid", fgColor: { rgb: NAVY } },
+    alignment: { horizontal: "center", vertical: "center" },
+    border: border(NAVY),
+  };
+  const kpiValue = {
+    font: { ...FONT_BASE, bold: true, color: { rgb: GREEN }, sz: 12 },
+    alignment: { horizontal: "center", vertical: "center" },
+    border: border(),
+    fill: { patternType: "solid", fgColor: { rgb: WHITE } },
+  };
+
+  // ── Row 1: Title
+  setCell(ws, "A1", styled("PROJECT PIPELINE TRACKER", {
+    font: { ...FONT_BASE, bold: true, sz: 16, color: { rgb: NAVY } },
+    alignment: { horizontal: "left", vertical: "center" },
+  }));
+  ensureRef(ws, "A1");
+
+  // ── Row 2: KPI strip on the right (cols G–P)
+  const kpis: Array<[string, string, number | string]> = [
+    ["G2", "% Avance", `${pct}%`],
+    ["I2", "Etapas", total],
+    ["K2", "Completadas", done],
+    ["M2", "Pendientes", pending],
+    ["O2", "Bloqueadas", blocked],
+  ];
+  kpis.forEach(([addr, label, value]) => {
+    const col = addr[0];
+    const nextCol = String.fromCharCode(col.charCodeAt(0) + 1);
+    setCell(ws, addr, styled(label, kpiHeader));
+    setCell(ws, `${nextCol}2`, styled(value, kpiValue));
+    ensureRef(ws, `${nextCol}2`);
+  });
+
+  // ── Rows 3–5: Project info block (labels col A/D, values col B–C / E–F)
+  const infoLabel = {
+    font: { ...FONT_BASE, bold: true, sz: 10, color: { rgb: TEXT_DARK } },
+    fill: { patternType: "solid", fgColor: { rgb: NAVY_SOFT } },
+    alignment: { horizontal: "left", vertical: "center", indent: 1 },
+    border: border(),
+  };
+  const infoValue = {
+    font: { ...FONT_BASE, sz: 10, color: { rgb: TEXT_DARK } },
+    alignment: { horizontal: "left", vertical: "center", indent: 1 },
+    border: border(),
+    fill: { patternType: "solid", fgColor: { rgb: WHITE } },
+  };
+  const rowsInfo: Array<[string, string, string, string]> = [
+    ["A3", "Proyecto", "B3", meta.projectName || ""],
+    ["D3", "Presentation Structure", "E3", meta.presentationStructure ?? ""],
+    ["A4", "Cliente", "B4", meta.client ?? ""],
+    ["D4", "Responsable", "E4", meta.owner ?? ""],
+    ["A5", "Cuenta", "B5", meta.account ?? ""],
+    ["D5", "Fecha", "E5", meta.date ?? new Date().toLocaleDateString()],
+  ];
+  ws["!merges"] = ws["!merges"] ?? [];
+  rowsInfo.forEach(([la, lv, va, vv]) => {
+    setCell(ws, la, styled(lv, infoLabel));
+    setCell(ws, va, styled(vv, infoValue));
+    // Merge value across 2 columns
+    const start = XLSX.utils.decode_cell(va);
+    ws["!merges"]!.push({ s: { r: start.r, c: start.c }, e: { r: start.r, c: start.c + 1 } });
+    ensureRef(ws, XLSX.utils.encode_cell({ r: start.r, c: start.c + 1 }));
+  });
+
+  // Section headers row 7 (leave row 6 spacer)
+  ws["!rows"][6] = { hpt: 10 };
+  const sectionHeader = {
+    font: { ...FONT_BASE, bold: true, color: { rgb: WHITE }, sz: 11 },
+    fill: { patternType: "solid", fgColor: { rgb: NAVY } },
+    alignment: { horizontal: "left", vertical: "center", indent: 1 },
+    border: border(NAVY),
+  };
+  setCell(ws, "A8", styled("RESUMEN POR ÁREA", sectionHeader));
+  setCell(ws, "D8", styled("RESUMEN POR ESTADO", sectionHeader));
+  ws["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 1 } });
+  ws["!merges"].push({ s: { r: 7, c: 3 }, e: { r: 7, c: 4 } });
+  ensureRef(ws, "E8");
+
+  // Aggregate by area
+  const byArea = new Map<string, number>();
+  stages.forEach((s) => {
+    const key = s.responsibleArea?.trim() || "Sin asignar";
+    byArea.set(key, (byArea.get(key) ?? 0) + 1);
+  });
+  const areaRows = Array.from(byArea.entries()).sort((a, b) => b[1] - a[1]);
+
+  const cellText = {
+    font: { ...FONT_BASE, sz: 10, color: { rgb: TEXT_DARK } },
+    alignment: { horizontal: "left", vertical: "center", indent: 1 },
+    border: border(),
+    fill: { patternType: "solid", fgColor: { rgb: WHITE } },
+  };
+  const cellNum = {
+    ...cellText,
+    alignment: { horizontal: "center", vertical: "center" },
+    font: { ...FONT_BASE, sz: 10, bold: true, color: { rgb: TEXT_DARK } },
+  };
+  const summaryStartRow = 9; // 1-indexed
+  areaRows.forEach(([name, count], i) => {
+    const r = summaryStartRow + i;
+    setCell(ws, `A${r}`, styled(name, cellText));
+    setCell(ws, `B${r}`, styled(count, cellNum));
+    ensureRef(ws, `B${r}`);
+  });
+  if (areaRows.length === 0) {
+    setCell(ws, `A${summaryStartRow}`, styled("—", cellText));
+    setCell(ws, `B${summaryStartRow}`, styled(0, cellNum));
+  }
+
+  // Aggregate by status
+  WORKFLOW_STATUSES.forEach((w, i) => {
+    const r = summaryStartRow + i;
+    const count = stages.filter((s) => s.status === w.id).length;
+    setCell(ws, `D${r}`, styled(w.label, {
+      ...cellText,
+      fill: { patternType: "solid", fgColor: { rgb: STATUS_FILL[w.id] } },
+      font: { ...FONT_BASE, sz: 10, bold: true, color: { rgb: STATUS_TEXT[w.id] } },
+    }));
+    setCell(ws, `E${r}`, styled(count, cellNum));
+    ensureRef(ws, `E${r}`);
+  });
+
+  // ── Main pipeline table
+  const tableHeaderRow = Math.max(summaryStartRow + areaRows.length, summaryStartRow + WORKFLOW_STATUSES.length) + 2;
+  const headers = [
+    "#", "Sección", "Área", "Estado", "Responsable",
+    "Fecha inicio", "Fecha límite", "% Avance", "Comentarios",
+  ];
+  const tableHeaderStyle = {
+    font: { ...FONT_BASE, bold: true, color: { rgb: WHITE }, sz: 10 },
+    fill: { patternType: "solid", fgColor: { rgb: NAVY } },
+    alignment: { horizontal: "center", vertical: "center", wrapText: true },
+    border: border(NAVY),
+  };
+  headers.forEach((h, i) => {
+    const addr = XLSX.utils.encode_cell({ r: tableHeaderRow - 1, c: i });
+    setCell(ws, addr, styled(h, tableHeaderStyle));
+    ensureRef(ws, addr);
+  });
+  ws["!rows"][tableHeaderRow - 1] = { hpt: 26 };
+
+  const rowStyle = (fillColor = WHITE) => ({
+    font: { ...FONT_BASE, sz: 10, color: { rgb: TEXT_DARK } },
+    alignment: { horizontal: "left", vertical: "center", indent: 1, wrapText: true },
+    border: border(),
+    fill: { patternType: "solid", fgColor: { rgb: fillColor } },
+  });
+  const centerStyle = (fillColor = WHITE) => ({
+    ...rowStyle(fillColor),
+    alignment: { horizontal: "center", vertical: "center" },
+  });
+
+  stages.forEach((s, i) => {
+    const r = tableHeaderRow + i;
+    const zebra = i % 2 === 0 ? WHITE : "F9FAFB";
+    const meta = statusMeta(s.status);
+    setCell(ws, `A${r}`, styled(i + 1, centerStyle(zebra)));
+    setCell(ws, `B${r}`, styled(s.name + (s.parentName ? ` (${s.parentName})` : ""), rowStyle(zebra)));
+    setCell(ws, `C${r}`, styled(s.responsibleArea ?? "—", rowStyle(zebra)));
+    setCell(ws, `D${r}`, styled(meta.label, {
+      ...centerStyle(STATUS_FILL[s.status]),
+      font: { ...FONT_BASE, sz: 10, bold: true, color: { rgb: STATUS_TEXT[s.status] } },
+    }));
+    setCell(ws, `E${r}`, styled(s.owner ?? "—", rowStyle(zebra)));
+    setCell(ws, `F${r}`, styled(s.startedAt ? new Date(s.startedAt).toLocaleDateString() : "—", centerStyle(zebra)));
+    setCell(ws, `G${r}`, styled(s.dueDate ?? "—", centerStyle(zebra)));
+    const p = stageProgressPct(s.status);
+    setCell(ws, `H${r}`, styled(`${p}%`, {
+      ...centerStyle(zebra),
+      font: {
+        ...FONT_BASE, sz: 10, bold: true,
+        color: { rgb: p >= 100 ? GREEN : p >= 40 ? AMBER : p === 0 ? TEXT_MUTED : NAVY },
+      },
+    }));
+    setCell(ws, `I${r}`, styled(s.comment ?? "", rowStyle(zebra)));
+    ensureRef(ws, `I${r}`);
+    ws["!rows"]![r - 1] = { hpt: 22 };
+  });
+
+  // Freeze header rows and enable autofilter on the main table
+  const lastRow = tableHeaderRow + Math.max(stages.length - 1, 0);
+  ws["!autofilter"] = { ref: `A${tableHeaderRow}:I${Math.max(lastRow, tableHeaderRow)}` };
+  ws["!freeze"] = { xSplit: 0, ySplit: tableHeaderRow };
+
+  XLSX.utils.book_append_sheet(wb, ws, "Pipeline Tracker");
+
+  const safeName = (fileBase || "insightdeck").replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_");
+  XLSX.writeFile(wb, `${safeName}__Pipeline_Tracker.xlsx`);
 }
