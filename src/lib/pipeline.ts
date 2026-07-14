@@ -366,7 +366,7 @@ export function downloadPipelineXlsx(
     }));
     setCell(ws, `I${r}`, styled(s.comment ?? "", rowStyle(zebra)));
     ensureRef(ws, `I${r}`);
-    ws["!rows"][r - 1] = { hpt: 22 };
+    ws["!rows"]![r - 1] = { hpt: 22 };
   });
 
   // Freeze header rows and enable autofilter on the main table
