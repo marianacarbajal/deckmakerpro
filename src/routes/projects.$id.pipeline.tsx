@@ -81,7 +81,7 @@ function PipelinePage() {
       const base = p.workflow?.length ? p.workflow : stages;
       return { ...p, workflow: [...base, stage] };
     });
-    setDraft({ name: "", responsibleArea: AREAS[0], owner: "", status: "not_started", dueDate: "", comment: "" });
+    setDraft({ name: "", responsibleArea: AREAS[0] ?? "", owner: "", status: "not_started", dueDate: "", comment: "" });
     setShowNew(false);
   };
 
