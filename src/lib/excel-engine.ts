@@ -12,14 +12,61 @@ export interface ExcelStageState {
 }
 
 export const EXCEL_STAGES: Omit<ExcelStageState, "status">[] = [
-  { id: "detect", label: "Detección de hojas", description: "Escaneando estructura y variables por hoja.", sheetName: "01_Base_Original" },
-  { id: "clean", label: "Base limpia", description: "Normalización, tipos y valores nulos.", sheetName: "02_Base_Limpia" },
-  { id: "dictionary", label: "Diccionario de variables", description: "Etiquetas, tipos y descripciones.", sheetName: "03_Diccionario_Variables" },
-  { id: "homolog", label: "Homologaciones", description: "Estandarización de valores repetidos.", sheetName: "04_Homologaciones" },
-  { id: "tables", label: "Tablas resumen", description: "Agregaciones por dimensión categórica.", sheetName: "05_Tablas_Resumen" },
-  { id: "kpis", label: "KPIs", description: "Métricas clave calculadas con fórmulas.", sheetName: "06_KPIs" },
-  { id: "dashboard", label: "Dashboard interno", description: "Vista consolidada para el analista.", sheetName: "07_Dashboard_Interno" },
-  { id: "insights", label: "Insights base", description: "Titulares derivados listos para el prompt.", sheetName: "08_Insights_Base" },
+  {
+    id: "detect",
+    label: "Detección de hojas",
+    description: "Escaneando estructura y variables por hoja.",
+    sheetName: "01_Base_Original",
+  },
+  {
+    id: "clean",
+    label: "Base limpia",
+    description: "Normalización, tipos y valores nulos.",
+    sheetName: "02_Base_Limpia",
+  },
+  {
+    id: "dictionary",
+    label: "Diccionario de variables",
+    description: "Etiquetas, tipos y descripciones.",
+    sheetName: "03_Diccionario_Variables",
+  },
+  {
+    id: "homolog",
+    label: "Homologaciones",
+    description: "Estandarización de valores repetidos.",
+    sheetName: "04_Homologaciones",
+  },
+  {
+    id: "tables",
+    label: "Tablas resumen",
+    description: "Agregaciones por dimensión categórica.",
+    sheetName: "05_Tablas_Resumen",
+  },
+  {
+    id: "kpis",
+    label: "KPIs",
+    description: "Métricas clave calculadas con fórmulas.",
+    sheetName: "06_KPIs",
+  },
+  {
+    id: "dashboard",
+    label: "Dashboard interno",
+    description: "Vista consolidada para el analista.",
+    sheetName: "07_Dashboard_Interno",
+  },
+  {
+    id: "insights",
+    label: "Insights base",
+    description: "Titulares derivados listos para el prompt.",
+    sheetName: "08_Insights_Base",
+  },
+  {
+    id: "crosstabs",
+    label: "Cruces categóricos",
+    description:
+      "Tablas cruzadas variable × variable, rankeadas por qué tan lejos están del promedio general.",
+    sheetName: "09_Cruces_Categoricos",
+  },
 ];
 
 // ─────────────────────────────────────────── helpers ───────────────────────
@@ -56,7 +103,7 @@ function profileSheet(name: string, sheet: XLSX.WorkSheet): SheetProfile {
   const rows = coerceRows(sheet);
   const headers = rows.length
     ? Object.keys(rows[0] as Record<string, unknown>)
-    : (XLSX.utils.sheet_to_json(sheet, { header: 1 })[0] as string[] | undefined) ?? [];
+    : ((XLSX.utils.sheet_to_json(sheet, { header: 1 })[0] as string[] | undefined) ?? []);
 
   const columns: ColumnStat[] = headers.map((h) => {
     const values = rows.map((r) => r[h]).filter((v) => v !== null && v !== undefined && v !== "");
@@ -77,7 +124,9 @@ function profileSheet(name: string, sheet: XLSX.WorkSheet): SheetProfile {
       nonNull,
       nulls,
       unique: uniq,
-      sample: values.slice(0, 3).map((v) => (v instanceof Date ? v.toISOString() : (v as string | number))),
+      sample: values
+        .slice(0, 3)
+        .map((v) => (v instanceof Date ? v.toISOString() : (v as string | number))),
     };
 
     if (type === "numeric" && numericValues.length) {
@@ -108,6 +157,157 @@ function profileSheet(name: string, sheet: XLSX.WorkSheet): SheetProfile {
   });
 
   return { name, rowCount: rows.length, colCount: headers.length, headers, rows, columns };
+}
+
+// ─────────────────────────────────── real cross-tabs (categorical × categorical) ─
+
+export interface CrossTabResult {
+  variable_a: string;
+  variable_b: string;
+  categories_a: string[];
+  categories_b: string[];
+  // counts[a][b] = number of respondents
+  counts: Record<string, Record<string, number>>;
+  // row-percentage version, easier for an LLM (or a human) to spot a skew at a glance
+  row_pct: Record<string, Record<string, number>>;
+  // crude "interestingness" score: how much row distributions deviate from the overall
+  // distribution of variable B (higher = more likely to be a meaningful cruce, not noise)
+  skew_score: number;
+}
+
+function crossTab(rows: Record<string, unknown>[], colA: string, colB: string): CrossTabResult {
+  const countsA = new Map<string, number>();
+  const countsB = new Map<string, number>();
+  const joint = new Map<string, Map<string, number>>();
+
+  for (const r of rows) {
+    const a =
+      r[colA] === null || r[colA] === undefined || r[colA] === "" ? "(Sin dato)" : String(r[colA]);
+    const b =
+      r[colB] === null || r[colB] === undefined || r[colB] === "" ? "(Sin dato)" : String(r[colB]);
+    countsA.set(a, (countsA.get(a) ?? 0) + 1);
+    countsB.set(b, (countsB.get(b) ?? 0) + 1);
+    if (!joint.has(a)) joint.set(a, new Map());
+    const inner = joint.get(a)!;
+    inner.set(b, (inner.get(b) ?? 0) + 1);
+  }
+
+  const categoriesA = Array.from(countsA.entries())
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 8)
+    .map(([k]) => k);
+  const categoriesB = Array.from(countsB.entries())
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 6)
+    .map(([k]) => k);
+  const totalB = rows.length || 1;
+  const overallShareB = new Map(categoriesB.map((b) => [b, (countsB.get(b) ?? 0) / totalB]));
+
+  const counts: Record<string, Record<string, number>> = {};
+  const rowPct: Record<string, Record<string, number>> = {};
+  let deviationSum = 0;
+  let deviationN = 0;
+
+  for (const a of categoriesA) {
+    counts[a] = {};
+    rowPct[a] = {};
+    const inner = joint.get(a) ?? new Map();
+    const rowTotal = countsA.get(a) ?? 0;
+    for (const b of categoriesB) {
+      const c = inner.get(b) ?? 0;
+      counts[a][b] = c;
+      const pct = rowTotal ? c / rowTotal : 0;
+      rowPct[a][b] = Number((pct * 100).toFixed(1));
+      const expected = overallShareB.get(b) ?? 0;
+      deviationSum += Math.abs(pct - expected);
+      deviationN += 1;
+    }
+  }
+
+  return {
+    variable_a: colA,
+    variable_b: colB,
+    categories_a: categoriesA,
+    categories_b: categoriesB,
+    counts,
+    row_pct: rowPct,
+    skew_score: deviationN ? Number((deviationSum / deviationN).toFixed(3)) : 0,
+  };
+}
+
+// ─────────────────────────────────── analysis summary (for the AI prompt, not the xlsx) ─
+
+export interface VariableSummary {
+  name: string;
+  type: ColumnStat["type"];
+  non_null: number;
+  unique: number;
+  top_values?: { value: string; count: number; pct: number }[];
+  numeric_stats?: { min: number; max: number; avg: number };
+}
+
+export interface AnalysisSummary {
+  sheet_name: string;
+  row_count: number;
+  col_count: number;
+  variables: VariableSummary[];
+  cross_tabs: CrossTabResult[];
+}
+
+/**
+ * Builds a compact, serializable summary of the real data — meant to be embedded
+ * directly inside the prompt sent to Claude, so the model reasons over actual
+ * distributions and cross-tabs instead of just a filename.
+ */
+export function buildAnalysisSummary(base: SheetProfile): AnalysisSummary {
+  const variables: VariableSummary[] = base.columns.map((c) => ({
+    name: c.name,
+    type: c.type,
+    non_null: c.nonNull,
+    unique: c.unique,
+    top_values: c.categorical?.top.map((t) => ({
+      value: t.value,
+      count: t.count,
+      pct: Number(((t.count / Math.max(1, base.rowCount)) * 100).toFixed(1)),
+    })),
+    numeric_stats: c.numeric
+      ? { min: c.numeric.min, max: c.numeric.max, avg: Number(c.numeric.avg.toFixed(2)) }
+      : undefined,
+  }));
+
+  // Build real cruces for every pair of categorical variables (capped to keep the
+  // prompt a reasonable size), ranked by skew_score so the most "interesting" ones
+  // (biggest deviation from the overall distribution) come first.
+  const categoricals = base.columns.filter(
+    (c) => c.type === "categorical" && c.unique >= 2 && c.unique <= 12,
+  );
+  const pairs: CrossTabResult[] = [];
+  for (let i = 0; i < categoricals.length; i++) {
+    for (let j = 0; j < categoricals.length; j++) {
+      if (i === j) continue;
+      pairs.push(crossTab(base.rows, categoricals[i].name, categoricals[j].name));
+    }
+  }
+  pairs.sort((a, b) => b.skew_score - a.skew_score);
+
+  // de-dupe symmetric pairs (a,b) vs (b,a) — keep whichever came first (already sorted)
+  const seen = new Set<string>();
+  const topPairs: CrossTabResult[] = [];
+  for (const p of pairs) {
+    const key = [p.variable_a, p.variable_b].sort().join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    topPairs.push(p);
+    if (topPairs.length >= 8) break;
+  }
+
+  return {
+    sheet_name: base.name,
+    row_count: base.rowCount,
+    col_count: base.colCount,
+    variables,
+    cross_tabs: topPairs,
+  };
 }
 
 function pickBestSheet(profiles: SheetProfile[]): SheetProfile | undefined {
@@ -141,6 +341,7 @@ export interface ExcelEngineResult {
   base?: SheetProfile;
   stagesDone: string[];
   sheetsGenerated: string[];
+  summary?: AnalysisSummary;
 }
 
 export function runExcelEngine(bytes: ArrayBuffer, project: Project): ExcelEngineResult {
@@ -219,7 +420,9 @@ export function runExcelEngine(bytes: ArrayBuffer, project: Project): ExcelEngin
     }
     XLSX.utils.book_append_sheet(
       out,
-      XLSX.utils.json_to_sheet(rows.length ? rows : [{ columna: "—", origen: "—", homologado: "sin duplicados" }]),
+      XLSX.utils.json_to_sheet(
+        rows.length ? rows : [{ columna: "—", origen: "—", homologado: "sin duplicados" }],
+      ),
       "04_Homologaciones",
     );
     sheetsGenerated.push("04_Homologaciones");
@@ -244,12 +447,19 @@ export function runExcelEngine(bytes: ArrayBuffer, project: Project): ExcelEngin
         const catRange = `'02_Base_Limpia'!${catColLetter}${dataStart}:${catColLetter}${dataEnd}`;
 
         aoa.push([`Dimensión: ${cat.name}`, "", "", ""]);
-        aoa.push(["Valor", `Suma de ${firstNumeric.name}`, `Promedio de ${firstNumeric.name}`, "Conteo"]);
+        aoa.push([
+          "Valor",
+          `Suma de ${firstNumeric.name}`,
+          `Promedio de ${firstNumeric.name}`,
+          "Conteo",
+        ]);
         for (const t of cat.categorical?.top ?? []) {
           aoa.push([
             t.value,
             { f: `SUMIF(${catRange},A${aoa.length + 1},${numRange})` } as unknown as number,
-            { f: `IFERROR(AVERAGEIF(${catRange},A${aoa.length + 1},${numRange}),0)` } as unknown as number,
+            {
+              f: `IFERROR(AVERAGEIF(${catRange},A${aoa.length + 1},${numRange}),0)`,
+            } as unknown as number,
             { f: `COUNTIF(${catRange},A${aoa.length + 1})` } as unknown as number,
           ]);
         }
@@ -282,7 +492,11 @@ export function runExcelEngine(bytes: ArrayBuffer, project: Project): ExcelEngin
 
     const rows: (string | number | { f: string })[][] = [];
     rows.push(["KPI", "Variable", "Valor (fórmula)"]);
-    rows.push(["Registros totales", "—", { f: `COUNTA('02_Base_Limpia'!A${dataStart}:A${dataEnd})` }]);
+    rows.push([
+      "Registros totales",
+      "—",
+      { f: `COUNTA('02_Base_Limpia'!A${dataStart}:A${dataEnd})` },
+    ]);
     for (const n of numerics) {
       const idx = base.headers.indexOf(n.name);
       const letter = col(idx);
@@ -366,12 +580,30 @@ export function runExcelEngine(bytes: ArrayBuffer, project: Project): ExcelEngin
     sheetsGenerated.push("08_Insights_Base");
   }
 
+  // 09_Cruces_Categoricos — real categorical × categorical cross-tabs, ranked by
+  // how much they deviate from the overall distribution (the "interesting" ones)
+  const summary = base ? buildAnalysisSummary(base) : undefined;
+  if (summary && summary.cross_tabs.length) {
+    const aoa: (string | number)[][] = [];
+    for (const ct of summary.cross_tabs) {
+      aoa.push([`${ct.variable_a}  ×  ${ct.variable_b}`, "", "", ""]);
+      aoa.push(["", ...ct.categories_b]);
+      for (const a of ct.categories_a) {
+        aoa.push([a, ...ct.categories_b.map((b) => ct.row_pct[a][b])]);
+      }
+      aoa.push([]);
+    }
+    XLSX.utils.book_append_sheet(out, XLSX.utils.aoa_to_sheet(aoa), "09_Cruces_Categoricos");
+    sheetsGenerated.push("09_Cruces_Categoricos");
+  }
+
   return {
     wb: out,
     sheetProfiles: profiles,
     base,
     stagesDone: EXCEL_STAGES.map((s) => s.id),
     sheetsGenerated,
+    summary,
   };
 }
 
@@ -392,7 +624,9 @@ export function downloadExcelAnalitico(project: Project) {
   XLSX.utils.book_append_sheet(
     wb,
     XLSX.utils.json_to_sheet([
-      { aviso: "No hay bytes en caché. Vuelve a cargar el archivo para generar el analítico real." },
+      {
+        aviso: "No hay bytes en caché. Vuelve a cargar el archivo para generar el analítico real.",
+      },
     ]),
     "01_Base_Original",
   );

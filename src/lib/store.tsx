@@ -1,8 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { MOCK_PROJECTS } from "./mock-data";
 import type { Account } from "./account-taxonomy";
 import type { WorkflowStage } from "./pipeline";
-
 
 export interface UploadedFile {
   name: string;
@@ -51,6 +58,11 @@ export interface SlideData {
   main_insight?: string;
   business_implication?: string;
   metrics?: Array<{ label: string; value: string | number; delta?: string }>;
+  // Real 2D data for HEATMAP_01 / MATRIX_01 layouts — values[i][j] corresponds to
+  // rows[i] × cols[j]. Populated from an actual cross-tab (see excel-engine.ts),
+  // never fabricated. When absent, the renderer shows a neutral placeholder instead
+  // of decorative fake data.
+  matrix?: { rows: string[]; cols: string[]; values: number[][]; value_label?: string };
   supporting_insights?: string[];
   recommended_visuals?: string[];
   recommended_layout?: string;
@@ -67,6 +79,10 @@ export interface ExcelAnalysisState {
   ranAt?: string;
   completedStages: string[];
   sheetsGenerated: string[];
+  // Real computed distributions/cross-tabs from the last run of the Excel engine.
+  // `unknown` here to avoid a circular import with excel-engine.ts — consumers
+  // should import `AnalysisSummary` from "@/lib/excel-engine" when reading this.
+  summary?: unknown;
 }
 
 export interface Project {
@@ -83,7 +99,6 @@ export interface Project {
   created_at: string;
   updated_at: string;
 }
-
 
 const STORAGE_KEY = "insightdeck.projects.v2";
 const LEGACY_KEY = "insightdeck.projects.v1";
@@ -201,12 +216,16 @@ function migrateLegacy(raw: unknown): Project[] | null {
           presentationStructureId: gi.presentationStructureId as string | undefined,
           clientProfileId: gi.clientProfileId as string | undefined,
           visualIdentityId: gi.visualIdentityId as string | undefined,
-          selectedTemplateIds: Array.isArray(gi.selectedTemplateIds) ? (gi.selectedTemplateIds as string[]) : undefined,
+          selectedTemplateIds: Array.isArray(gi.selectedTemplateIds)
+            ? (gi.selectedTemplateIds as string[])
+            : undefined,
         },
         study_context: {
           ...base.study_context,
           objective: String(ctx.objective ?? ""),
-          specificObjectives: Array.isArray(ctx.specificObjectives) ? (ctx.specificObjectives as string[]) : [],
+          specificObjectives: Array.isArray(ctx.specificObjectives)
+            ? (ctx.specificObjectives as string[])
+            : [],
           clientQuestions: String(ctx.clientQuestions ?? ""),
           hypotheses: String(ctx.hypotheses ?? ""),
           notes: String(ctx.notes ?? ""),
@@ -214,7 +233,9 @@ function migrateLegacy(raw: unknown): Project[] | null {
         },
         uploaded_files: Array.isArray(r.uploaded_files) ? (r.uploaded_files as UploadedFile[]) : [],
         claude_json: String(r.claude_json ?? ""),
-        generated_slides: Array.isArray(r.generated_slides) ? (r.generated_slides as SlideData[]) : [],
+        generated_slides: Array.isArray(r.generated_slides)
+          ? (r.generated_slides as SlideData[])
+          : [],
         current_status: (r.current_status as ProjectStatus) ?? "draft",
         current_step: Number(r.current_step ?? 1),
         created_at: String(r.created_at ?? new Date().toISOString()),
@@ -282,7 +303,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
 
   const updateProject = useCallback((id: string, updater: (p: Project) => Project) => {
     setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...updater(p), updated_at: new Date().toISOString() } : p))
+      prev.map((p) => (p.id === id ? { ...updater(p), updated_at: new Date().toISOString() } : p)),
     );
   }, []);
 
@@ -292,7 +313,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ projects, getProject, createProject, updateProject, deleteProject }),
-    [projects, getProject, createProject, updateProject, deleteProject]
+    [projects, getProject, createProject, updateProject, deleteProject],
   );
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;

@@ -82,11 +82,12 @@ export function validateJson(raw: string): ValidationResult {
     }
     const row = s as Record<string, unknown>;
 
-    const slide_type = typeof row.slide_type === "string"
-      ? row.slide_type
-      : typeof row.type === "string"
-        ? (row.type as string)
-        : "";
+    const slide_type =
+      typeof row.slide_type === "string"
+        ? row.slide_type
+        : typeof row.type === "string"
+          ? (row.type as string)
+          : "";
     const title = typeof row.title === "string" ? row.title : "";
     const main_insight =
       typeof row.main_insight === "string"
@@ -105,7 +106,25 @@ export function validateJson(raw: string): ValidationResult {
     const layout =
       typeof row.recommended_layout === "string"
         ? row.recommended_layout
-        : TYPE_TO_LAYOUT[slide_type.toLowerCase()] ?? "KPI_01";
+        : (TYPE_TO_LAYOUT[slide_type.toLowerCase()] ?? "KPI_01");
+
+    let matrix: SlideData["matrix"];
+    if (typeof row.matrix === "object" && row.matrix !== null) {
+      const m = row.matrix as Record<string, unknown>;
+      const rows = Array.isArray(m.rows) ? m.rows.map(String) : [];
+      const cols = Array.isArray(m.cols) ? m.cols.map(String) : [];
+      const values = Array.isArray(m.values)
+        ? (m.values as unknown[]).map((r) => (Array.isArray(r) ? r.map((v) => Number(v) || 0) : []))
+        : [];
+      if (rows.length && cols.length && values.length) {
+        matrix = {
+          rows,
+          cols,
+          values,
+          value_label: typeof m.value_label === "string" ? m.value_label : undefined,
+        };
+      }
+    }
 
     const metricsRaw = Array.isArray(row.metrics) ? row.metrics : [];
     const metrics = metricsRaw
@@ -132,6 +151,7 @@ export function validateJson(raw: string): ValidationResult {
         : [],
       recommended_layout: layout,
       notes: typeof row.notes === "string" ? row.notes : undefined,
+      matrix,
       status: "pending",
     });
   });

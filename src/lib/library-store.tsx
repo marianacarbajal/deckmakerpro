@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Account } from "./account-taxonomy";
 
 // ─────── Types ───────
@@ -17,7 +25,6 @@ export interface PresentationSection {
   isPlaceholder?: boolean;
   notes?: string;
 }
-
 
 export interface PresentationStructure {
   id: string;
@@ -74,68 +81,234 @@ function seedStructures(): PresentationStructure[] {
 
   // 1. Auditoría de Canal
   const s1: PresentationSection[] = [];
-  s1.push(s("Briefing", undefined, 1, { responsibleArea: "Investigación", dataSource: "user", estimatedSlides: 2, canBeGeneratedByAI: false }));
-  const inv = s("Investigación", undefined, 2, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  s1.push(
+    s("Briefing", undefined, 1, {
+      responsibleArea: "Investigación",
+      dataSource: "user",
+      estimatedSlides: 2,
+      canBeGeneratedByAI: false,
+    }),
+  );
+  const inv = s("Investigación", undefined, 2, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s1.push(inv);
   ["Contexto Macro", "Categoría", "Competencia"].forEach((n, i) =>
-    s1.push(s(n, inv.id, i + 1, { responsibleArea: "Investigación", dataSource: "internet", estimatedSlides: 2, canBeGeneratedByAI: true })),
+    s1.push(
+      s(n, inv.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "internet",
+        estimatedSlides: 2,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  const bench = s("Benchmark", inv.id, 4, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  const bench = s("Benchmark", inv.id, 4, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s1.push(bench);
   ["Portafolio", "Precios", "Promociones", "Comunicación", "KPIs"].forEach((n, i) =>
-    s1.push(s(n, bench.id, i + 1, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 1, canBeGeneratedByAI: true })),
+    s1.push(
+      s(n, bench.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "excel",
+        estimatedSlides: 1,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
   ["Brand Visibility", "Stocking", "Sell In", "Sell Out", "Share"].forEach((n, i) =>
-    s1.push(s(n, inv.id, 5 + i, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true })),
+    s1.push(
+      s(n, inv.id, 5 + i, {
+        responsibleArea: "Investigación",
+        dataSource: "excel",
+        estimatedSlides: 2,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  s1.push(s("Estrategia", undefined, 3, { responsibleArea: "Estrategia", dataSource: "other_area", isPlaceholder: true, canBeGeneratedByAI: false }));
-  s1.push(s("Propuesta", undefined, 4, { responsibleArea: "Propuesta", dataSource: "other_area", isPlaceholder: true, canBeGeneratedByAI: false }));
+  s1.push(
+    s("Estrategia", undefined, 3, {
+      responsibleArea: "Estrategia",
+      dataSource: "other_area",
+      isPlaceholder: true,
+      canBeGeneratedByAI: false,
+    }),
+  );
+  s1.push(
+    s("Propuesta", undefined, 4, {
+      responsibleArea: "Propuesta",
+      dataSource: "other_area",
+      isPlaceholder: true,
+      canBeGeneratedByAI: false,
+    }),
+  );
 
   // 2. Samsung Business Review
   sid = 100;
   const s2: PresentationSection[] = [];
-  const gc = s("Gestión en cifras", undefined, 1, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  const gc = s("Gestión en cifras", undefined, 1, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s2.push(gc);
   ["Macro", "Social", "Consumer Behaviour"].forEach((n, i) =>
-    s2.push(s(n, gc.id, i + 1, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true })),
+    s2.push(
+      s(n, gc.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "excel",
+        estimatedSlides: 2,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  const bs = s("Benchmark", undefined, 2, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  const bs = s("Benchmark", undefined, 2, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s2.push(bs);
   ["Modelos", "Portafolio", "Promociones", "Exhibición", "Comunicación", "KPIs"].forEach((n, i) =>
-    s2.push(s(n, bs.id, i + 1, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 1, canBeGeneratedByAI: true })),
+    s2.push(
+      s(n, bs.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "excel",
+        estimatedSlides: 1,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  const act = s("Actores", undefined, 3, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  const act = s("Actores", undefined, 3, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s2.push(act);
   ["Shopper", "Seller"].forEach((n, i) =>
-    s2.push(s(n, act.id, i + 1, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true })),
+    s2.push(
+      s(n, act.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "excel",
+        estimatedSlides: 2,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  s2.push(s("Conclusiones", undefined, 4, { responsibleArea: "Investigación", dataSource: "ai", canBeGeneratedByAI: true }));
-  s2.push(s("Estrategia", undefined, 5, { responsibleArea: "Estrategia", dataSource: "other_area", canBeGeneratedByAI: false }));
-  s2.push(s("Propuesta", undefined, 6, { responsibleArea: "Propuesta", dataSource: "other_area", canBeGeneratedByAI: false }));
+  s2.push(
+    s("Conclusiones", undefined, 4, {
+      responsibleArea: "Investigación",
+      dataSource: "ai",
+      canBeGeneratedByAI: true,
+    }),
+  );
+  s2.push(
+    s("Estrategia", undefined, 5, {
+      responsibleArea: "Estrategia",
+      dataSource: "other_area",
+      canBeGeneratedByAI: false,
+    }),
+  );
+  s2.push(
+    s("Propuesta", undefined, 6, {
+      responsibleArea: "Propuesta",
+      dataSource: "other_area",
+      canBeGeneratedByAI: false,
+    }),
+  );
 
   // 3. Brand Report
   sid = 200;
   const s3: PresentationSection[] = [];
-  const mk = s("Mercado", undefined, 1, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  const mk = s("Mercado", undefined, 1, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s3.push(mk);
   ["Macro", "Categoría"].forEach((n, i) =>
-    s3.push(s(n, mk.id, i + 1, { responsibleArea: "Investigación", dataSource: "internet", estimatedSlides: 2, canBeGeneratedByAI: true })),
+    s3.push(
+      s(n, mk.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "internet",
+        estimatedSlides: 2,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  const vt = s("Ventas", undefined, 2, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  const vt = s("Ventas", undefined, 2, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s3.push(vt);
   ["Sell In", "Sell Out"].forEach((n, i) =>
-    s3.push(s(n, vt.id, i + 1, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true })),
+    s3.push(
+      s(n, vt.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "excel",
+        estimatedSlides: 2,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  const st = s("Stakeholders", undefined, 3, { responsibleArea: "Investigación", dataSource: "excel", canBeGeneratedByAI: true });
+  const st = s("Stakeholders", undefined, 3, {
+    responsibleArea: "Investigación",
+    dataSource: "excel",
+    canBeGeneratedByAI: true,
+  });
   s3.push(st);
   ["Shopper", "Tendero"].forEach((n, i) =>
-    s3.push(s(n, st.id, i + 1, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true })),
+    s3.push(
+      s(n, st.id, i + 1, {
+        responsibleArea: "Investigación",
+        dataSource: "excel",
+        estimatedSlides: 2,
+        canBeGeneratedByAI: true,
+      }),
+    ),
   );
-  s3.push(s("Double Funnel", undefined, 4, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true }));
-  s3.push(s("Canje", undefined, 5, { responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true }));
-  s3.push(s("Conclusiones", undefined, 6, { responsibleArea: "Investigación", dataSource: "ai", canBeGeneratedByAI: true }));
-  s3.push(s("Estrategia", undefined, 7, { responsibleArea: "Estrategia", dataSource: "other_area", canBeGeneratedByAI: false }));
-  s3.push(s("Propuesta", undefined, 8, { responsibleArea: "Propuesta", dataSource: "other_area", canBeGeneratedByAI: false }));
+  s3.push(
+    s("Double Funnel", undefined, 4, {
+      responsibleArea: "Investigación",
+      dataSource: "excel",
+      estimatedSlides: 2,
+      canBeGeneratedByAI: true,
+    }),
+  );
+  s3.push(
+    s("Canje", undefined, 5, {
+      responsibleArea: "Investigación",
+      dataSource: "excel",
+      estimatedSlides: 2,
+      canBeGeneratedByAI: true,
+    }),
+  );
+  s3.push(
+    s("Conclusiones", undefined, 6, {
+      responsibleArea: "Investigación",
+      dataSource: "ai",
+      canBeGeneratedByAI: true,
+    }),
+  );
+  s3.push(
+    s("Estrategia", undefined, 7, {
+      responsibleArea: "Estrategia",
+      dataSource: "other_area",
+      canBeGeneratedByAI: false,
+    }),
+  );
+  s3.push(
+    s("Propuesta", undefined, 8, {
+      responsibleArea: "Propuesta",
+      dataSource: "other_area",
+      canBeGeneratedByAI: false,
+    }),
+  );
 
   return [
     {
@@ -249,8 +422,13 @@ interface LibraryCtx {
   benchmarks: KnowledgeBenchmark[];
   getStructure: (id?: string) => PresentationStructure | undefined;
   getProfile: (id?: string) => ClientProfile | undefined;
-  addStructure: (s: Omit<PresentationStructure, "id" | "createdAt" | "updatedAt">) => PresentationStructure;
-  updateStructure: (id: string, updater: (s: PresentationStructure) => PresentationStructure) => void;
+  addStructure: (
+    s: Omit<PresentationStructure, "id" | "createdAt" | "updatedAt">,
+  ) => PresentationStructure;
+  updateStructure: (
+    id: string,
+    updater: (s: PresentationStructure) => PresentationStructure,
+  ) => void;
   deleteStructure: (id: string) => void;
   addProfile: (p: Omit<ClientProfile, "id" | "createdAt">) => ClientProfile;
   updateProfile: (id: string, updater: (p: ClientProfile) => ClientProfile) => void;
@@ -284,24 +462,44 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     if (hydrated) save(KEY_BENCH, benchmarks);
   }, [benchmarks, hydrated]);
 
-  const getStructure = useCallback((id?: string) => structures.find((s) => s.id === id), [structures]);
+  const getStructure = useCallback(
+    (id?: string) => structures.find((s) => s.id === id),
+    [structures],
+  );
   const getProfile = useCallback((id?: string) => profiles.find((p) => p.id === id), [profiles]);
 
-  const addStructure = useCallback((s: Omit<PresentationStructure, "id" | "createdAt" | "updatedAt">) => {
-    const now = new Date().toISOString();
-    const next: PresentationStructure = { ...s, id: `ps-${Date.now().toString(36)}`, createdAt: now, updatedAt: now };
-    setStructures((prev) => [next, ...prev]);
-    return next;
-  }, []);
-  const updateStructure = useCallback((id: string, updater: (s: PresentationStructure) => PresentationStructure) => {
-    setStructures((prev) => prev.map((s) => (s.id === id ? { ...updater(s), updatedAt: new Date().toISOString() } : s)));
-  }, []);
+  const addStructure = useCallback(
+    (s: Omit<PresentationStructure, "id" | "createdAt" | "updatedAt">) => {
+      const now = new Date().toISOString();
+      const next: PresentationStructure = {
+        ...s,
+        id: `ps-${Date.now().toString(36)}`,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setStructures((prev) => [next, ...prev]);
+      return next;
+    },
+    [],
+  );
+  const updateStructure = useCallback(
+    (id: string, updater: (s: PresentationStructure) => PresentationStructure) => {
+      setStructures((prev) =>
+        prev.map((s) => (s.id === id ? { ...updater(s), updatedAt: new Date().toISOString() } : s)),
+      );
+    },
+    [],
+  );
   const deleteStructure = useCallback((id: string) => {
     setStructures((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   const addProfile = useCallback((p: Omit<ClientProfile, "id" | "createdAt">) => {
-    const next: ClientProfile = { ...p, id: `cp-${Date.now().toString(36)}`, createdAt: new Date().toISOString() };
+    const next: ClientProfile = {
+      ...p,
+      id: `cp-${Date.now().toString(36)}`,
+      createdAt: new Date().toISOString(),
+    };
     setProfiles((prev) => [next, ...prev]);
     return next;
   }, []);
@@ -313,7 +511,11 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addBenchmark = useCallback((b: Omit<KnowledgeBenchmark, "id" | "createdAt">) => {
-    const next: KnowledgeBenchmark = { ...b, id: `bm-${Date.now().toString(36)}`, createdAt: new Date().toISOString() };
+    const next: KnowledgeBenchmark = {
+      ...b,
+      id: `bm-${Date.now().toString(36)}`,
+      createdAt: new Date().toISOString(),
+    };
     setBenchmarks((prev) => [next, ...prev]);
     return next;
   }, []);
@@ -337,7 +539,21 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       addBenchmark,
       deleteBenchmark,
     }),
-    [structures, profiles, benchmarks, getStructure, getProfile, addStructure, updateStructure, deleteStructure, addProfile, updateProfile, deleteProfile, addBenchmark, deleteBenchmark],
+    [
+      structures,
+      profiles,
+      benchmarks,
+      getStructure,
+      getProfile,
+      addStructure,
+      updateStructure,
+      deleteStructure,
+      addProfile,
+      updateProfile,
+      deleteProfile,
+      addBenchmark,
+      deleteBenchmark,
+    ],
   );
 
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;

@@ -16,9 +16,6 @@ import { LibraryProvider } from "../lib/library-store";
 import { TemplateProvider } from "../lib/template-store";
 import { OrgProvider } from "../lib/org-store";
 
-
-
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -98,11 +95,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "DeckMaker Pro — Market Research Deck Builder" },
-      { name: "description", content: "Herramienta interna para consultorels de investigación de mercados: transforma datos en presentaciones ejecutivas." },
-      { property: "og:description", content: "Herramienta interna para consultorels de investigación de mercados: transforma datos en presentaciones ejecutivas." },
-      { name: "twitter:description", content: "Herramienta interna para consultorels de investigación de mercados: transforma datos en presentaciones ejecutivas." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e92fffdf-3f12-4a6e-a911-9309b0899c16/id-preview-3d40a337--bf24c3c0-a62e-4dda-8ae3-82a53b96bf68.lovable.app-1783360410177.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e92fffdf-3f12-4a6e-a911-9309b0899c16/id-preview-3d40a337--bf24c3c0-a62e-4dda-8ae3-82a53b96bf68.lovable.app-1783360410177.png" },
+      {
+        name: "description",
+        content:
+          "Herramienta interna para consultorels de investigación de mercados: transforma datos en presentaciones ejecutivas.",
+      },
+      {
+        property: "og:description",
+        content:
+          "Herramienta interna para consultorels de investigación de mercados: transforma datos en presentaciones ejecutivas.",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Herramienta interna para consultorels de investigación de mercados: transforma datos en presentaciones ejecutivas.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e92fffdf-3f12-4a6e-a911-9309b0899c16/id-preview-3d40a337--bf24c3c0-a62e-4dda-8ae3-82a53b96bf68.lovable.app-1783360410177.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e92fffdf-3f12-4a6e-a911-9309b0899c16/id-preview-3d40a337--bf24c3c0-a62e-4dda-8ae3-82a53b96bf68.lovable.app-1783360410177.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -150,9 +167,6 @@ function RootComponent() {
           </TemplateProvider>
         </LibraryProvider>
       </ProjectsProvider>
-
-
     </QueryClientProvider>
   );
 }
-

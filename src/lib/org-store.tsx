@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 export interface OrgItem {
   id: string;
@@ -24,12 +32,10 @@ const SEED: OrgState = {
     "QA",
     "Dirección",
   ].map((name, i) => ({ id: `area-${i}-${name.toLowerCase()}`, name })),
-  owners: [
-    "Ana Martínez",
-    "Carlos Ruiz",
-    "María López",
-    "Diego Salas",
-  ].map((name, i) => ({ id: `own-${i}-${name.toLowerCase().replace(/\s+/g, "-")}`, name })),
+  owners: ["Ana Martínez", "Carlos Ruiz", "María López", "Diego Salas"].map((name, i) => ({
+    id: `own-${i}-${name.toLowerCase().replace(/\s+/g, "-")}`,
+    name,
+  })),
 };
 
 function load(): OrgState {
@@ -84,7 +90,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     if (!clean) return;
     setState((s) => {
       if (s[kind].some((x) => x.name.toLowerCase() === clean.toLowerCase())) return s;
-      const item: OrgItem = { id: `${kind === "areas" ? "area" : "own"}-${Date.now().toString(36)}`, name: clean };
+      const item: OrgItem = {
+        id: `${kind === "areas" ? "area" : "own"}-${Date.now().toString(36)}`,
+        name: clean,
+      };
       return { ...s, [kind]: [...s[kind], item] };
     });
   }, []);
@@ -92,7 +101,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const rename = useCallback((kind: Kind, id: string, name: string) => {
     const clean = name.trim();
     if (!clean) return;
-    setState((s) => ({ ...s, [kind]: s[kind].map((x) => (x.id === id ? { ...x, name: clean } : x)) }));
+    setState((s) => ({
+      ...s,
+      [kind]: s[kind].map((x) => (x.id === id ? { ...x, name: clean } : x)),
+    }));
   }, []);
 
   const remove = useCallback((kind: Kind, id: string) => {

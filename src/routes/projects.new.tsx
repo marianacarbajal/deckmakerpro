@@ -3,7 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { useProjects } from "@/lib/store";
 import { useLibrary } from "@/lib/library-store";
 import { useOrg } from "@/lib/org-store";
-import { ACCOUNTS, CHANNELS_BY_ACCOUNT, allSubcategoriesFor, type Account } from "@/lib/account-taxonomy";
+import {
+  ACCOUNTS,
+  CHANNELS_BY_ACCOUNT,
+  allSubcategoriesFor,
+  type Account,
+} from "@/lib/account-taxonomy";
 import { MultiChipSelect } from "@/components/multi-chip-select";
 import { useMemo, useState } from "react";
 
@@ -32,14 +37,17 @@ function NewProject() {
     clientProfileId: "",
   });
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   const availableChannels = form.account ? CHANNELS_BY_ACCOUNT[form.account] : [];
   const availableSubs = useMemo(
     () => allSubcategoriesFor(form.account, form.channels),
     [form.account, form.channels],
   );
-  const filteredProfiles = form.account ? profiles.filter((p) => p.account === form.account) : profiles;
+  const filteredProfiles = form.account
+    ? profiles.filter((p) => p.account === form.account)
+    : profiles;
 
   const onAccount = (v: Account | "") => {
     // reset dependent selections
@@ -47,7 +55,11 @@ function NewProject() {
   };
   const onChannels = (next: string[]) => {
     const subs = allSubcategoriesFor(form.account, next);
-    setForm((f) => ({ ...f, channels: next, subcategories: f.subcategories.filter((s) => subs.includes(s)) }));
+    setForm((f) => ({
+      ...f,
+      channels: next,
+      subcategories: f.subcategories.filter((s) => subs.includes(s)),
+    }));
   };
 
   const submit = (e: React.FormEvent) => {
@@ -85,12 +97,15 @@ function NewProject() {
           <div className="mb-8">
             <h1 className="text-2xl font-bold tracking-tight">Registrar investigación</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Configura cuenta, canal y estructura desde el inicio. Estos datos alimentan el prompt de análisis
-              y la generación del pipeline.
+              Configura cuenta, canal y estructura desde el inicio. Estos datos alimentan el prompt
+              de análisis y la generación del pipeline.
             </p>
           </div>
 
-          <form onSubmit={submit} className="bg-white border border-border rounded-xl p-8 space-y-6">
+          <form
+            onSubmit={submit}
+            className="bg-white border border-border rounded-xl p-8 space-y-6"
+          >
             <Field
               label="Nombre del proyecto"
               value={form.name}
@@ -100,8 +115,18 @@ function NewProject() {
             />
 
             <div className="grid grid-cols-2 gap-6">
-              <Field label="Cliente" value={form.client} onChange={(v) => set("client", v)} placeholder="Ej. Rintisa" />
-              <Field label="Marca" value={form.brand} onChange={(v) => set("brand", v)} placeholder="Ej. Rinti" />
+              <Field
+                label="Cliente"
+                value={form.client}
+                onChange={(v) => set("client", v)}
+                placeholder="Ej. Rintisa"
+              />
+              <Field
+                label="Marca"
+                value={form.brand}
+                onChange={(v) => set("brand", v)}
+                placeholder="Ej. Rinti"
+              />
             </div>
 
             <div>
@@ -123,7 +148,8 @@ function NewProject() {
                 ))}
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">
-                Reemplaza al campo Categoría. Determina qué canales y subcategorías estarán disponibles.
+                Reemplaza al campo Categoría. Determina qué canales y subcategorías estarán
+                disponibles.
               </p>
             </div>
 
@@ -145,7 +171,9 @@ function NewProject() {
                 value={form.subcategories}
                 onChange={(v) => set("subcategories", v)}
                 disabled={form.channels.length === 0}
-                emptyLabel={form.account ? "Selecciona al menos un canal." : "Selecciona una cuenta primero."}
+                emptyLabel={
+                  form.account ? "Selecciona al menos un canal." : "Selecciona una cuenta primero."
+                }
               />
             </div>
 
@@ -174,7 +202,12 @@ function NewProject() {
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              <Field label="Fecha de inicio" type="date" value={form.dueDate} onChange={(v) => set("dueDate", v)} />
+              <Field
+                label="Fecha de inicio"
+                type="date"
+                value={form.dueDate}
+                onChange={(v) => set("dueDate", v)}
+              />
               <div />
             </div>
 
@@ -219,7 +252,10 @@ function NewProject() {
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-              <Link to="/" className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <Link
+                to="/"
+                className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              >
                 Cancelar
               </Link>
               <button

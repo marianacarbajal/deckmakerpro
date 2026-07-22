@@ -38,7 +38,14 @@ function PipelinePage() {
   }, [project, structure]);
 
   const [showNew, setShowNew] = useState(false);
-  const [draft, setDraft] = useState<{ name: string; responsibleArea: string; owner: string; status: WorkflowStatus; dueDate: string; comment: string }>({
+  const [draft, setDraft] = useState<{
+    name: string;
+    responsibleArea: string;
+    owner: string;
+    status: WorkflowStatus;
+    dueDate: string;
+    comment: string;
+  }>({
     name: "",
     responsibleArea: AREAS[0] ?? "",
     owner: "",
@@ -66,7 +73,10 @@ function PipelinePage() {
               ...patch,
               updatedAt: new Date().toISOString(),
               completedAt: patch.status === "completed" ? new Date().toISOString() : s.completedAt,
-              startedAt: patch.status === "in_progress" && !s.startedAt ? new Date().toISOString() : s.startedAt,
+              startedAt:
+                patch.status === "in_progress" && !s.startedAt
+                  ? new Date().toISOString()
+                  : s.startedAt,
             }
           : s,
       );
@@ -81,12 +91,24 @@ function PipelinePage() {
       const base = p.workflow?.length ? p.workflow : stages;
       return { ...p, workflow: [...base, stage] };
     });
-    setDraft({ name: "", responsibleArea: AREAS[0] ?? "", owner: "", status: "not_started", dueDate: "", comment: "" });
+    setDraft({
+      name: "",
+      responsibleArea: AREAS[0] ?? "",
+      owner: "",
+      status: "not_started",
+      dueDate: "",
+      comment: "",
+    });
     setShowNew(false);
   };
 
   const removeStage = (stageId: string, name: string) => {
-    if (!window.confirm(`¿Eliminar la etapa "${name}"?\n\nEl porcentaje del pipeline se recalculará automáticamente.`)) return;
+    if (
+      !window.confirm(
+        `¿Eliminar la etapa "${name}"?\n\nEl porcentaje del pipeline se recalculará automáticamente.`,
+      )
+    )
+      return;
     updateProject(project.id, (p) => {
       const base = p.workflow?.length ? p.workflow : stages;
       return { ...p, workflow: base.filter((s) => s.id !== stageId) };
@@ -98,7 +120,9 @@ function PipelinePage() {
       projectName: project.general_information.name || "Sin nombre",
       client: project.general_information.client,
       account: project.general_information.account || undefined,
-      presentationStructure: structure?.name ?? structures.find((s) => s.id === project.general_information.presentationStructureId)?.name,
+      presentationStructure:
+        structure?.name ??
+        structures.find((s) => s.id === project.general_information.presentationStructureId)?.name,
       owner: project.general_information.owner,
       date: new Date().toLocaleDateString(),
     });
@@ -127,13 +151,15 @@ function PipelinePage() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Project Pipeline</h1>
               <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-                Etapas auto-generadas desde la Presentation Structure. Agrega, edita o elimina etapas y
-                comparte el seguimiento con las demás áreas exportando a Excel.
+                Etapas auto-generadas desde la Presentation Structure. Agrega, edita o elimina
+                etapas y comparte el seguimiento con las demás áreas exportando a Excel.
               </p>
             </div>
             <div className="flex items-end gap-6">
               <div className="text-right">
-                <div className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Progreso global</div>
+                <div className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
+                  Progreso global
+                </div>
                 <div className="text-3xl font-bold">{progress.pct}%</div>
                 <div className="text-[11px] text-muted-foreground">
                   {progress.done} de {progress.total} etapas
@@ -171,7 +197,9 @@ function PipelinePage() {
                 className="bg-white border border-border rounded-md px-3 py-2"
               >
                 {AREAS.map((a) => (
-                  <option key={a} value={a}>{a}</option>
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
                 ))}
               </select>
               <select
@@ -181,7 +209,9 @@ function PipelinePage() {
               >
                 <option value="">Responsable…</option>
                 {ownerNames.map((o) => (
-                  <option key={o} value={o}>{o}</option>
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
                 ))}
               </select>
               <select
@@ -190,7 +220,9 @@ function PipelinePage() {
                 className="bg-white border border-border rounded-md px-3 py-2"
               >
                 {WORKFLOW_STATUSES.map((w) => (
-                  <option key={w.id} value={w.id}>{w.label}</option>
+                  <option key={w.id} value={w.id}>
+                    {w.label}
+                  </option>
                 ))}
               </select>
               <input
@@ -217,7 +249,8 @@ function PipelinePage() {
 
           {!structure && stages.length === 0 && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-6 text-sm">
-              Este proyecto no tiene una <strong>Presentation Structure</strong> asignada. Ve al paso{" "}
+              Este proyecto no tiene una <strong>Presentation Structure</strong> asignada. Ve al
+              paso{" "}
               <Link
                 to="/projects/$id/$step"
                 params={{ id: project.id, step: "context" }}
@@ -225,7 +258,8 @@ function PipelinePage() {
               >
                 Contexto
               </Link>{" "}
-              para asignar una, o usa <strong>+ Nueva etapa</strong> para crear el pipeline manualmente.
+              para asignar una, o usa <strong>+ Nueva etapa</strong> para crear el pipeline
+              manualmente.
             </div>
           )}
 
@@ -239,7 +273,9 @@ function PipelinePage() {
                     <th className="text-left px-4 py-3 font-semibold min-w-[140px]">Área</th>
                     <th className="text-left px-4 py-3 font-semibold min-w-[130px]">Estado</th>
                     <th className="text-left px-4 py-3 font-semibold min-w-[150px]">Responsable</th>
-                    <th className="text-left px-4 py-3 font-semibold min-w-[130px]">Fecha límite</th>
+                    <th className="text-left px-4 py-3 font-semibold min-w-[130px]">
+                      Fecha límite
+                    </th>
                     <th className="text-left px-4 py-3 font-semibold min-w-[130px]">% Avance</th>
                     <th className="text-left px-4 py-3 font-semibold min-w-[240px]">Comentario</th>
                     <th className="w-10" />
@@ -248,19 +284,23 @@ function PipelinePage() {
                 <tbody>
                   {stages.map((s, i) => {
                     const meta = statusMeta(s.status);
-                    const ownerOptions = s.owner && !ownerNames.includes(s.owner)
-                      ? [s.owner, ...ownerNames]
-                      : ownerNames;
-                    const areaOptions = s.responsibleArea && !AREAS.includes(s.responsibleArea)
-                      ? [s.responsibleArea, ...AREAS]
-                      : AREAS;
+                    const ownerOptions =
+                      s.owner && !ownerNames.includes(s.owner)
+                        ? [s.owner, ...ownerNames]
+                        : ownerNames;
+                    const areaOptions =
+                      s.responsibleArea && !AREAS.includes(s.responsibleArea)
+                        ? [s.responsibleArea, ...AREAS]
+                        : AREAS;
                     return (
                       <tr key={s.id} className="border-t border-border">
                         <td className="px-4 py-3 text-muted-foreground text-xs">{i + 1}</td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-sm">{s.name}</div>
                           {s.parentName && (
-                            <div className="text-[10px] text-muted-foreground">↳ {s.parentName}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              ↳ {s.parentName}
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs">
@@ -271,18 +311,24 @@ function PipelinePage() {
                           >
                             <option value="">—</option>
                             {areaOptions.map((a) => (
-                              <option key={a} value={a}>{a}</option>
+                              <option key={a} value={a}>
+                                {a}
+                              </option>
                             ))}
                           </select>
                         </td>
                         <td className="px-4 py-3">
                           <select
                             value={s.status}
-                            onChange={(e) => setStage(s.id, { status: e.target.value as WorkflowStatus })}
+                            onChange={(e) =>
+                              setStage(s.id, { status: e.target.value as WorkflowStatus })
+                            }
                             className={`text-[11px] font-semibold px-2 py-1 rounded-full border outline-none ${meta.tone}`}
                           >
                             {WORKFLOW_STATUSES.map((w) => (
-                              <option key={w.id} value={w.id}>{w.label}</option>
+                              <option key={w.id} value={w.id}>
+                                {w.label}
+                              </option>
                             ))}
                           </select>
                         </td>
@@ -294,7 +340,9 @@ function PipelinePage() {
                           >
                             <option value="">—</option>
                             {ownerOptions.map((o) => (
-                              <option key={o} value={o}>{o}</option>
+                              <option key={o} value={o}>
+                                {o}
+                              </option>
                             ))}
                           </select>
                         </td>

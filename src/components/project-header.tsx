@@ -39,7 +39,6 @@ export function ProjectHeader({ projectId, projectName, currentStep, action }: P
             </Link>
           )}
         </div>
-
       </div>
 
       <div className="px-8 pb-3 flex items-center gap-1.5 overflow-x-auto">

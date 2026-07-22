@@ -1,13 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { useLibrary, type PresentationSection, type PresentationStructure, type ClientProfile } from "@/lib/library-store";
+import {
+  useLibrary,
+  type PresentationSection,
+  type PresentationStructure,
+  type ClientProfile,
+} from "@/lib/library-store";
 import { ACCOUNTS, type Account } from "@/lib/account-taxonomy";
 import { useState } from "react";
 
 export const Route = createFileRoute("/knowledge-library")({
   head: () => ({ meta: [{ title: "Knowledge Library · InsightDeck Pro" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (["structures", "benchmarks", "profiles"] as const).includes(s.tab as "structures") ? (s.tab as "structures" | "benchmarks" | "profiles") : "structures",
+    tab: (["structures", "benchmarks", "profiles"] as const).includes(s.tab as "structures")
+      ? (s.tab as "structures" | "benchmarks" | "profiles")
+      : "structures",
   }),
   component: KnowledgeLibrary,
 });
@@ -74,7 +81,15 @@ function StructuresTab() {
       studyType: "",
       description: "",
       sections: [
-        { id: `sec-${Date.now()}`, name: "Sección 1", order: 1, responsibleArea: "Investigación", dataSource: "excel", estimatedSlides: 2, canBeGeneratedByAI: true },
+        {
+          id: `sec-${Date.now()}`,
+          name: "Sección 1",
+          order: 1,
+          responsibleArea: "Investigación",
+          dataSource: "excel",
+          estimatedSlides: 2,
+          canBeGeneratedByAI: true,
+        },
       ],
     });
     setOpenId(s.id);
@@ -86,8 +101,8 @@ function StructuresTab() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Presentation Structures</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Plantillas de arquitectura narrativa reutilizables. Se seleccionan al crear un proyecto y
-            alimentan el Prompt Builder y el pipeline por áreas.
+            Plantillas de arquitectura narrativa reutilizables. Se seleccionan al crear un proyecto
+            y alimentan el Prompt Builder y el pipeline por áreas.
           </p>
         </div>
         <button
@@ -115,7 +130,9 @@ function StructuresTab() {
                 </button>
               </div>
               {s.description && (
-                <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{s.description}</p>
+                <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                  {s.description}
+                </p>
               )}
             </div>
             <div className="p-5 bg-surface/40">
@@ -143,7 +160,9 @@ function StructurePreview({ structure }: { structure: PresentationStructure }) {
   return (
     <ol className="space-y-1 text-xs">
       {roots.map((r, i) => {
-        const children = structure.sections.filter((s) => s.parentId === r.id).sort((a, b) => a.order - b.order);
+        const children = structure.sections
+          .filter((s) => s.parentId === r.id)
+          .sort((a, b) => a.order - b.order);
         return (
           <li key={r.id}>
             <div className="font-medium text-foreground">
@@ -214,7 +233,9 @@ function StructureEditor({ structureId }: { structureId: string }) {
     <div className="p-5 border-t border-border space-y-4 bg-white">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Nombre</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Nombre
+          </label>
           <input
             value={s.name}
             onChange={(e) => updateField("name", e.target.value)}
@@ -222,7 +243,9 @@ function StructureEditor({ structureId }: { structureId: string }) {
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Tipo de estudio</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Tipo de estudio
+          </label>
           <input
             value={s.studyType}
             onChange={(e) => updateField("studyType", e.target.value)}
@@ -231,7 +254,9 @@ function StructureEditor({ structureId }: { structureId: string }) {
         </div>
       </div>
       <div>
-        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Descripción</label>
+        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          Descripción
+        </label>
         <textarea
           value={s.description}
           onChange={(e) => updateField("description", e.target.value)}
@@ -311,17 +336,27 @@ function SectionRow({
         onChange={(e) => onChange({ responsibleArea: e.target.value })}
         className="bg-white border border-border rounded px-2 py-1.5 text-[11px] text-muted-foreground"
       >
-        {["Investigación", "Estrategia", "Propuesta", "Branding", "Marketing", "Ventas", "Comercial", "QA", "Dirección"].map(
-          (a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ),
-        )}
+        {[
+          "Investigación",
+          "Estrategia",
+          "Propuesta",
+          "Branding",
+          "Marketing",
+          "Ventas",
+          "Comercial",
+          "QA",
+          "Dirección",
+        ].map((a) => (
+          <option key={a} value={a}>
+            {a}
+          </option>
+        ))}
       </select>
       <select
         value={section.dataSource ?? "excel"}
-        onChange={(e) => onChange({ dataSource: e.target.value as PresentationSection["dataSource"] })}
+        onChange={(e) =>
+          onChange({ dataSource: e.target.value as PresentationSection["dataSource"] })
+        }
         className="bg-white border border-border rounded px-2 py-1.5 text-[11px] text-muted-foreground"
       >
         {(["excel", "internet", "user", "ai", "other_area"] as const).map((d) => (
@@ -354,7 +389,10 @@ function SectionRow({
         />
         Placeholder
       </label>
-      <button onClick={onRemove} className="text-[11px] text-muted-foreground hover:text-destructive">
+      <button
+        onClick={onRemove}
+        className="text-[11px] text-muted-foreground hover:text-destructive"
+      >
         ✕
       </button>
     </div>
@@ -365,7 +403,12 @@ function SectionRow({
 
 function BenchmarksTab() {
   const { benchmarks, addBenchmark, deleteBenchmark } = useLibrary();
-  const [form, setForm] = useState<{ name: string; account: Account | ""; studyType: string; notes: string }>({
+  const [form, setForm] = useState<{
+    name: string;
+    account: Account | "";
+    studyType: string;
+    notes: string;
+  }>({
     name: "",
     account: "",
     studyType: "",
@@ -375,7 +418,12 @@ function BenchmarksTab() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) return;
-    addBenchmark({ name: form.name, account: form.account, studyType: form.studyType, notes: form.notes });
+    addBenchmark({
+      name: form.name,
+      account: form.account,
+      studyType: form.studyType,
+      notes: form.notes,
+    });
     setForm({ name: "", account: "", studyType: "", notes: "" });
   };
 
@@ -385,12 +433,16 @@ function BenchmarksTab() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Benchmarks</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Investigaciones y valores históricos por cuenta, disponibles como referencia comparativa.
+            Investigaciones y valores históricos por cuenta, disponibles como referencia
+            comparativa.
           </p>
         </div>
       </div>
 
-      <form onSubmit={submit} className="bg-white border border-border rounded-xl p-5 grid grid-cols-4 gap-3 mb-6">
+      <form
+        onSubmit={submit}
+        className="bg-white border border-border rounded-xl p-5 grid grid-cols-4 gap-3 mb-6"
+      >
         <input
           placeholder="Nombre del benchmark"
           value={form.name}
@@ -448,7 +500,9 @@ function BenchmarksTab() {
                   <td className="px-4 py-3 font-medium">{b.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{b.account || "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{b.studyType || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground truncate max-w-xs">{b.notes || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground truncate max-w-xs">
+                    {b.notes || "—"}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => deleteBenchmark(b.id)}
@@ -471,12 +525,19 @@ function BenchmarksTab() {
 
 function ProfilesTab() {
   const { profiles, addProfile, updateProfile, deleteProfile } = useLibrary();
-  const [form, setForm] = useState<{ name: string; account: Account }>({ name: "", account: "ALICORP" });
+  const [form, setForm] = useState<{ name: string; account: Account }>({
+    name: "",
+    account: "ALICORP",
+  });
 
   const create = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) return;
-    addProfile({ name: form.name, account: form.account, colors: ["#0F172A", "#3B82F6", "#FFFFFF"] });
+    addProfile({
+      name: form.name,
+      account: form.account,
+      colors: ["#0F172A", "#3B82F6", "#FFFFFF"],
+    });
     setForm({ name: "", account: "ALICORP" });
   };
 
@@ -486,14 +547,20 @@ function ProfilesTab() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Client Profiles</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Identidad visual y tono por cuenta. Alimenta el Prompt Builder y la generación de slides.
+            Identidad visual y tono por cuenta. Alimenta el Prompt Builder y la generación de
+            slides.
           </p>
         </div>
       </div>
 
-      <form onSubmit={create} className="bg-white border border-border rounded-xl p-5 flex items-end gap-3 mb-6">
+      <form
+        onSubmit={create}
+        className="bg-white border border-border rounded-xl p-5 flex items-end gap-3 mb-6"
+      >
         <div className="flex-1">
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Nombre del perfil</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Nombre del perfil
+          </label>
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -502,7 +569,9 @@ function ProfilesTab() {
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Cuenta</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Cuenta
+          </label>
           <select
             value={form.account}
             onChange={(e) => setForm({ ...form, account: e.target.value as Account })}
@@ -522,7 +591,12 @@ function ProfilesTab() {
 
       <div className="grid grid-cols-2 gap-4">
         {profiles.map((p) => (
-          <ProfileCard key={p.id} profile={p} onChange={(patch) => updateProfile(p.id, (prev) => ({ ...prev, ...patch }))} onDelete={() => deleteProfile(p.id)} />
+          <ProfileCard
+            key={p.id}
+            profile={p}
+            onChange={(patch) => updateProfile(p.id, (prev) => ({ ...prev, ...patch }))}
+            onDelete={() => deleteProfile(p.id)}
+          />
         ))}
       </div>
     </>
@@ -554,17 +628,25 @@ function ProfileCard({
           />
           <div className="text-[11px] text-muted-foreground mt-1">{profile.account}</div>
         </div>
-        <button onClick={onDelete} className="text-[11px] text-muted-foreground hover:text-destructive">
+        <button
+          onClick={onDelete}
+          className="text-[11px] text-muted-foreground hover:text-destructive"
+        >
           Eliminar
         </button>
       </div>
 
       <div>
-        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Paleta</label>
+        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          Paleta
+        </label>
         <div className="flex items-center gap-2 mt-1">
           {profile.colors.map((c, i) => (
             <label key={i} className="relative">
-              <span className="block size-8 rounded-md border border-border" style={{ background: c }} />
+              <span
+                className="block size-8 rounded-md border border-border"
+                style={{ background: c }}
+              />
               <input
                 type="color"
                 value={c}
@@ -592,7 +674,9 @@ function ProfileCard({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Tipografía</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Tipografía
+          </label>
           <input
             value={profile.typography ?? ""}
             onChange={(e) => onChange({ typography: e.target.value })}
@@ -600,7 +684,9 @@ function ProfileCard({
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Tono</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Tono
+          </label>
           <input
             value={profile.toneOfVoice ?? ""}
             onChange={(e) => onChange({ toneOfVoice: e.target.value })}
@@ -610,7 +696,9 @@ function ProfileCard({
       </div>
 
       <div>
-        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Estilo visual</label>
+        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          Estilo visual
+        </label>
         <textarea
           value={profile.visualStyle ?? ""}
           onChange={(e) => onChange({ visualStyle: e.target.value })}

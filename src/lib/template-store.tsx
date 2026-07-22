@@ -1,12 +1,31 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Account } from "./account-taxonomy";
 
 export type TemplateKind = "presentation" | "slide";
 
 export const SLIDE_TYPES = [
-  "Funnel", "Ranking", "Benchmark", "Comparativo", "Heatmap", "Timeline",
-  "Distribución", "Mapa", "KPI Cards", "Matriz", "Mix Visual", "Dashboard",
-  "Photo Board", "Executive Summary",
+  "Funnel",
+  "Ranking",
+  "Benchmark",
+  "Comparativo",
+  "Heatmap",
+  "Timeline",
+  "Distribución",
+  "Mapa",
+  "KPI Cards",
+  "Matriz",
+  "Mix Visual",
+  "Dashboard",
+  "Photo Board",
+  "Executive Summary",
 ] as const;
 
 export interface TemplateAsset {
@@ -136,27 +155,46 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
   }, [visualIdentities, hydrated]);
 
   const add = useCallback((t: Omit<TemplateAsset, "id" | "createdAt">) => {
-    const next: TemplateAsset = { ...t, id: `tpl-${Date.now().toString(36)}`, createdAt: new Date().toISOString() };
+    const next: TemplateAsset = {
+      ...t,
+      id: `tpl-${Date.now().toString(36)}`,
+      createdAt: new Date().toISOString(),
+    };
     setTemplates((prev) => [next, ...prev]);
     return next;
   }, []);
-  const remove = useCallback((id: string) => setTemplates((prev) => prev.filter((t) => t.id !== id)), []);
-  const getMany = useCallback((ids: string[]) => templates.filter((t) => ids.includes(t.id)), [templates]);
+  const remove = useCallback(
+    (id: string) => setTemplates((prev) => prev.filter((t) => t.id !== id)),
+    [],
+  );
+  const getMany = useCallback(
+    (ids: string[]) => templates.filter((t) => ids.includes(t.id)),
+    [templates],
+  );
 
   const getVisualIdentity = useCallback(
     (id?: string) => visualIdentities.find((v) => v.id === id),
     [visualIdentities],
   );
   const visualIdentitiesForAccount = useCallback(
-    (account?: Account | "") => (account ? visualIdentities.filter((v) => v.account === account) : visualIdentities),
+    (account?: Account | "") =>
+      account ? visualIdentities.filter((v) => v.account === account) : visualIdentities,
     [visualIdentities],
   );
-  const addVisualIdentity = useCallback((v: Omit<VisualIdentity, "id" | "createdAt" | "updatedAt">) => {
-    const now = new Date().toISOString();
-    const next: VisualIdentity = { ...v, id: `vi-${Date.now().toString(36)}`, createdAt: now, updatedAt: now };
-    setVisualIdentities((prev) => [next, ...prev]);
-    return next;
-  }, []);
+  const addVisualIdentity = useCallback(
+    (v: Omit<VisualIdentity, "id" | "createdAt" | "updatedAt">) => {
+      const now = new Date().toISOString();
+      const next: VisualIdentity = {
+        ...v,
+        id: `vi-${Date.now().toString(36)}`,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setVisualIdentities((prev) => [next, ...prev]);
+      return next;
+    },
+    [],
+  );
   const updateVisualIdentity = useCallback(
     (id: string, updater: (v: VisualIdentity) => VisualIdentity) => {
       setVisualIdentities((prev) =>

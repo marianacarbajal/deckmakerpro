@@ -1,6 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { useTemplates, SLIDE_TYPES, type TemplateAsset, type VisualIdentity } from "@/lib/template-store";
+import {
+  useTemplates,
+  SLIDE_TYPES,
+  type TemplateAsset,
+  type VisualIdentity,
+} from "@/lib/template-store";
 import { ACCOUNTS, type Account } from "@/lib/account-taxonomy";
 import { useState } from "react";
 
@@ -150,7 +155,15 @@ function SlidesTab() {
   );
 }
 
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -171,9 +184,13 @@ function TemplateCard({ template, onDelete }: { template: TemplateAsset; onDelet
       <div className="aspect-video bg-surface border border-border rounded-md mb-4 flex items-center justify-center text-[10px] font-mono text-muted-foreground uppercase tracking-wider overflow-hidden">
         {template.fileDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={template.fileDataUrl} alt={template.name} className="object-cover w-full h-full" />
+          <img
+            src={template.fileDataUrl}
+            alt={template.name}
+            className="object-cover w-full h-full"
+          />
         ) : (
-          template.slideType ?? template.account ?? "Template"
+          (template.slideType ?? template.account ?? "Template")
         )}
       </div>
       <div className="flex items-start justify-between gap-2">
@@ -248,7 +265,9 @@ function NewTemplateForm({
     <div className="bg-white border border-primary/20 rounded-xl p-6 space-y-4">
       <div className="grid grid-cols-3 gap-4">
         <label className="text-xs">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Nombre</span>
+          <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">
+            Nombre
+          </span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -257,7 +276,9 @@ function NewTemplateForm({
         </label>
         {kind === "presentation" ? (
           <label className="text-xs">
-            <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Cuenta</span>
+            <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">
+              Cuenta
+            </span>
             <select
               value={account}
               onChange={(e) => setAccount(e.target.value as Account | "")}
@@ -273,7 +294,9 @@ function NewTemplateForm({
           </label>
         ) : (
           <label className="text-xs">
-            <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Tipo</span>
+            <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">
+              Tipo
+            </span>
             <select
               value={slideType}
               onChange={(e) => setSlideType(e.target.value)}
@@ -288,7 +311,9 @@ function NewTemplateForm({
           </label>
         )}
         <label className="text-xs">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Imagen (opcional)</span>
+          <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">
+            Imagen (opcional)
+          </span>
           <input
             type="file"
             accept="image/*"
@@ -298,7 +323,9 @@ function NewTemplateForm({
         </label>
       </div>
       <label className="text-xs block">
-        <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">Notas</span>
+        <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1">
+          Notas
+        </span>
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -320,13 +347,21 @@ function NewTemplateForm({
 // ─── Visual Identity ──────────────────────────────────────────────────────
 
 function VisualIdentityTab() {
-  const { visualIdentities, addVisualIdentity, updateVisualIdentity, deleteVisualIdentity } = useTemplates();
-  const [form, setForm] = useState<{ name: string; account: Account }>({ name: "", account: "ALICORP" });
+  const { visualIdentities, addVisualIdentity, updateVisualIdentity, deleteVisualIdentity } =
+    useTemplates();
+  const [form, setForm] = useState<{ name: string; account: Account }>({
+    name: "",
+    account: "ALICORP",
+  });
 
   const create = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    addVisualIdentity({ account: form.account, name: form.name.trim(), colors: ["#0F172A", "#3B82F6", "#F59E0B", "#FFFFFF"] });
+    addVisualIdentity({
+      account: form.account,
+      name: form.name.trim(),
+      colors: ["#0F172A", "#3B82F6", "#F59E0B", "#FFFFFF"],
+    });
     setForm({ name: "", account: "ALICORP" });
   };
 
@@ -336,15 +371,20 @@ function VisualIdentityTab() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Visual Identity</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Paletas oficiales por cuenta en HEX compatible con PowerPoint. Se aplican automáticamente
-            al generar la presentación cuando se selecciona en el proyecto.
+            Paletas oficiales por cuenta en HEX compatible con PowerPoint. Se aplican
+            automáticamente al generar la presentación cuando se selecciona en el proyecto.
           </p>
         </div>
       </div>
 
-      <form onSubmit={create} className="bg-white border border-border rounded-xl p-5 flex items-end gap-3 mb-6">
+      <form
+        onSubmit={create}
+        className="bg-white border border-border rounded-xl p-5 flex items-end gap-3 mb-6"
+      >
         <div className="flex-1">
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Nombre de la identidad</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Nombre de la identidad
+          </label>
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -353,13 +393,19 @@ function VisualIdentityTab() {
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Cuenta</label>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Cuenta
+          </label>
           <select
             value={form.account}
             onChange={(e) => setForm({ ...form, account: e.target.value as Account })}
             className="mt-1 bg-white border border-border rounded-md px-3 py-2 text-sm"
           >
-            {ACCOUNTS.map((a) => <option key={a} value={a}>{a}</option>)}
+            {ACCOUNTS.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
           </select>
         </div>
         <button className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primary-hover">
@@ -423,10 +469,15 @@ function VisualIdentityCard({
       </div>
 
       <div>
-        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Paleta ({vi.colors.length})</label>
+        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          Paleta ({vi.colors.length})
+        </label>
         <div className="flex items-center flex-wrap gap-2 mt-2">
           {vi.colors.map((c, i) => (
-            <div key={i} className="flex items-center gap-1 border border-border rounded-md p-1 bg-surface/40">
+            <div
+              key={i}
+              className="flex items-center gap-1 border border-border rounded-md p-1 bg-surface/40"
+            >
               <label className="relative">
                 <span className="block size-8 rounded" style={{ background: c }} />
                 <input
@@ -460,7 +511,9 @@ function VisualIdentityCard({
       </div>
 
       <div>
-        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Notas</label>
+        <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          Notas
+        </label>
         <textarea
           value={vi.notes ?? ""}
           onChange={(e) => onChange({ notes: e.target.value })}

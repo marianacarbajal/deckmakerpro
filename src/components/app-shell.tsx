@@ -12,7 +12,6 @@ const NAV = [
   { to: "/settings", label: "Configuración", match: (p: string) => p.startsWith("/settings") },
 ] as const;
 
-
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -41,9 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={n.to}
                 to={n.to}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md font-medium text-sm transition-colors ${
-                  active
-                    ? "bg-surface text-primary"
-                    : "text-muted-foreground hover:bg-surface"
+                  active ? "bg-surface text-primary" : "text-muted-foreground hover:bg-surface"
                 }`}
               >
                 <span

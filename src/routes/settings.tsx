@@ -19,14 +19,22 @@ function SettingsPage() {
           <div className="mb-8">
             <h1 className="text-2xl font-bold tracking-tight">Organización</h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-              Administra los responsables y áreas de tu organización. Estos valores alimentan todos los
-              selectores del sistema (Pipeline, creación de proyectos, etc.).
+              Administra los responsables y áreas de tu organización. Estos valores alimentan todos
+              los selectores del sistema (Pipeline, creación de proyectos, etc.).
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
-            <ManageList kind="owners" title="Responsables" hint="Personas que ejecutan las etapas del proyecto." />
-            <ManageList kind="areas" title="Áreas" hint="Equipos o áreas responsables (Investigación, Marketing…)." />
+            <ManageList
+              kind="owners"
+              title="Responsables"
+              hint="Personas que ejecutan las etapas del proyecto."
+            />
+            <ManageList
+              kind="areas"
+              title="Áreas"
+              hint="Equipos o áreas responsables (Investigación, Marketing…)."
+            />
           </div>
         </div>
       </div>
@@ -34,7 +42,15 @@ function SettingsPage() {
   );
 }
 
-function ManageList({ kind, title, hint }: { kind: "owners" | "areas"; title: string; hint: string }) {
+function ManageList({
+  kind,
+  title,
+  hint,
+}: {
+  kind: "owners" | "areas";
+  title: string;
+  hint: string;
+}) {
   const org = useOrg();
   const items: OrgItem[] = kind === "owners" ? org.owners : org.areas;
   const [draft, setDraft] = useState("");
@@ -53,7 +69,12 @@ function ManageList({ kind, title, hint }: { kind: "owners" | "areas"; title: st
   };
 
   const remove = (item: OrgItem) => {
-    if (!window.confirm(`¿Eliminar "${item.name}"?\n\nLos registros existentes conservarán el valor, pero ya no aparecerá en las listas.`)) return;
+    if (
+      !window.confirm(
+        `¿Eliminar "${item.name}"?\n\nLos registros existentes conservarán el valor, pero ya no aparecerá en las listas.`,
+      )
+    )
+      return;
     org.remove(kind, item.id);
   };
 
@@ -83,7 +104,9 @@ function ManageList({ kind, title, hint }: { kind: "owners" | "areas"; title: st
 
       <ul className="divide-y divide-border border border-border rounded-md overflow-hidden">
         {items.length === 0 && (
-          <li className="px-4 py-6 text-center text-xs text-muted-foreground">Sin registros aún.</li>
+          <li className="px-4 py-6 text-center text-xs text-muted-foreground">
+            Sin registros aún.
+          </li>
         )}
         {items.map((item) => {
           const isEditing = editing?.id === item.id;

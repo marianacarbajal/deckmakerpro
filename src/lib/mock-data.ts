@@ -149,7 +149,11 @@ export const MOCK_SLIDES: Slide[] = [
     template: "Funnel Cascade",
     dataSource: "table_3_pen.csv",
     comments: [
-      { author: "Sarah Chen", ago: "hace 2h", text: "¿Podemos separar el segmento Gen Z en un slide propio?" },
+      {
+        author: "Sarah Chen",
+        ago: "hace 2h",
+        text: "¿Podemos separar el segmento Gen Z en un slide propio?",
+      },
     ],
   },
   {

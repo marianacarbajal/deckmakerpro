@@ -40,7 +40,10 @@ export function subcategoriesFor(account: Account | "" | undefined, channel: str
   return SUBS[`${bucket}::${channel}`] ?? [];
 }
 
-export function allSubcategoriesFor(account: Account | "" | undefined, channels: string[]): string[] {
+export function allSubcategoriesFor(
+  account: Account | "" | undefined,
+  channels: string[],
+): string[] {
   if (!account) return [];
   const set = new Set<string>();
   for (const c of channels) subcategoriesFor(account, c).forEach((s) => set.add(s));

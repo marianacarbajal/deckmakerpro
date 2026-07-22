@@ -5,7 +5,6 @@ import { statusLabel, statusTone } from "@/lib/mock-data";
 import { workflowProgress, currentStage } from "@/lib/pipeline";
 import { useMemo, useState } from "react";
 
-
 export const Route = createFileRoute("/")({
   component: Dashboard,
 });
@@ -40,7 +39,10 @@ function Dashboard() {
   }, [projects]);
 
   const handleDelete = (id: string, name: string) => {
-    if (typeof window !== "undefined" && window.confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)
+    ) {
       deleteProject(id);
     }
   };
@@ -153,7 +155,9 @@ function Dashboard() {
                         </td>
                         <td className="px-6 py-4 text-muted-foreground">{gi.owner || "—"}</td>
                         <td className="px-6 py-4">
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusTone(p.current_status)}`}>
+                          <span
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusTone(p.current_status)}`}
+                          >
                             {statusLabel(p.current_status)}
                           </span>
                         </td>
@@ -161,13 +165,19 @@ function Dashboard() {
                           {(() => {
                             const prog = workflowProgress(p.workflow ?? []);
                             const stage = currentStage(p.workflow ?? []);
-                            if (!p.workflow?.length) return new Date(p.updated_at).toLocaleDateString();
+                            if (!p.workflow?.length)
+                              return new Date(p.updated_at).toLocaleDateString();
                             return (
                               <div>
                                 <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                  <div className="h-full bg-primary rounded-full" style={{ width: `${prog.pct}%` }} />
+                                  <div
+                                    className="h-full bg-primary rounded-full"
+                                    style={{ width: `${prog.pct}%` }}
+                                  />
                                 </div>
-                                <div className="text-[10px] mt-1 truncate">{stage?.name ?? "—"} · {prog.pct}%</div>
+                                <div className="text-[10px] mt-1 truncate">
+                                  {stage?.name ?? "—"} · {prog.pct}%
+                                </div>
                               </div>
                             );
                           })()}
@@ -197,7 +207,9 @@ function Dashboard() {
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div className="bg-white border border-border rounded-xl p-5">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
       <div className={`text-3xl font-bold tracking-tight mt-2 ${tone}`}>{value}</div>
     </div>
   );

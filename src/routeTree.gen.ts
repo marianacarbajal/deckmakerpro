@@ -9,29 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TemplatesRouteImport } from './routes/templates'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as KnowledgeLibraryRouteImport } from './routes/knowledge-library'
-import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BenchmarksRouteImport } from './routes/benchmarks'
+import { Route as KnowledgeLibraryRouteImport } from './routes/knowledge-library'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsIdIndexRouteImport } from './routes/projects.$id.index'
-import { Route as ProjectsIdPipelineRouteImport } from './routes/projects.$id.pipeline'
 import { Route as ProjectsIdStepRouteImport } from './routes/projects.$id.$step'
+import { Route as ProjectsIdPipelineRouteImport } from './routes/projects.$id.pipeline'
 
-const TemplatesRoute = TemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KnowledgeLibraryRoute = KnowledgeLibraryRouteImport.update({
-  id: '/knowledge-library',
-  path: '/knowledge-library',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BenchmarksRoute = BenchmarksRouteImport.update({
@@ -39,9 +29,19 @@ const BenchmarksRoute = BenchmarksRouteImport.update({
   path: '/benchmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const KnowledgeLibraryRoute = KnowledgeLibraryRouteImport.update({
+  id: '/knowledge-library',
+  path: '/knowledge-library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
@@ -54,14 +54,14 @@ const ProjectsIdIndexRoute = ProjectsIdIndexRouteImport.update({
   path: '/projects/$id/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProjectsIdPipelineRoute = ProjectsIdPipelineRouteImport.update({
-  id: '/projects/$id/pipeline',
-  path: '/projects/$id/pipeline',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProjectsIdStepRoute = ProjectsIdStepRouteImport.update({
   id: '/projects/$id/$step',
   path: '/projects/$id/$step',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsIdPipelineRoute = ProjectsIdPipelineRouteImport.update({
+  id: '/projects/$id/pipeline',
+  path: '/projects/$id/pipeline',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -149,25 +149,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/templates': {
-      id: '/templates'
-      path: '/templates'
-      fullPath: '/templates'
-      preLoaderRoute: typeof TemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/knowledge-library': {
-      id: '/knowledge-library'
-      path: '/knowledge-library'
-      fullPath: '/knowledge-library'
-      preLoaderRoute: typeof KnowledgeLibraryRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/benchmarks': {
@@ -177,11 +163,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BenchmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/knowledge-library': {
+      id: '/knowledge-library'
+      path: '/knowledge-library'
+      fullPath: '/knowledge-library'
+      preLoaderRoute: typeof KnowledgeLibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/new': {
@@ -198,18 +198,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects/$id/pipeline': {
-      id: '/projects/$id/pipeline'
-      path: '/projects/$id/pipeline'
-      fullPath: '/projects/$id/pipeline'
-      preLoaderRoute: typeof ProjectsIdPipelineRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/projects/$id/$step': {
       id: '/projects/$id/$step'
       path: '/projects/$id/$step'
       fullPath: '/projects/$id/$step'
       preLoaderRoute: typeof ProjectsIdStepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$id/pipeline': {
+      id: '/projects/$id/pipeline'
+      path: '/projects/$id/pipeline'
+      fullPath: '/projects/$id/pipeline'
+      preLoaderRoute: typeof ProjectsIdPipelineRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -229,3 +229,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

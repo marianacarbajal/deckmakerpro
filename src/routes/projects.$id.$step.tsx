@@ -2,7 +2,13 @@ import { createFileRoute, Link, useNavigate, Navigate } from "@tanstack/react-ro
 import { AppShell } from "@/components/app-shell";
 import { ProjectHeader } from "@/components/project-header";
 import { STEPS, type StepSlug } from "@/lib/mock-data";
-import { useProjects, type Project, type SlideData, type GeneralInformation, type SlideRevision } from "@/lib/store";
+import {
+  useProjects,
+  type Project,
+  type SlideData,
+  type GeneralInformation,
+  type SlideRevision,
+} from "@/lib/store";
 import { useLibrary } from "@/lib/library-store";
 import { useTemplates } from "@/lib/template-store";
 import {
@@ -15,13 +21,17 @@ import { MultiChipSelect } from "@/components/multi-chip-select";
 import { buildPrompt } from "@/lib/prompt-builder";
 import { validateJson } from "@/lib/json-validator";
 import { generatePptx } from "@/lib/pptx";
-import { EXCEL_STAGES, downloadExcelAnalitico, downloadWorkbook, firstExcelBytes, runExcelEngine, type ExcelStageState } from "@/lib/excel-engine";
+import {
+  EXCEL_STAGES,
+  downloadExcelAnalitico,
+  downloadWorkbook,
+  firstExcelBytes,
+  runExcelEngine,
+  type ExcelStageState,
+  type AnalysisSummary,
+} from "@/lib/excel-engine";
 import { putFileBytes, hasFileBytes } from "@/lib/file-cache";
-import { rewriteSlideWithAI } from "@/lib/rewrite-slide.functions";
-import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState, type ChangeEvent } from "react";
-
-
 
 export const Route = createFileRoute("/projects/$id/$step")({
   head: () => ({ meta: [{ title: "Proyecto · InsightDeck Pro" }] }),
@@ -44,7 +54,10 @@ function StepPage() {
         <div className="flex-1 flex items-center justify-center bg-surface">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Proyecto no encontrado.</p>
-            <Link to="/" className="inline-block mt-3 text-sm text-primary font-semibold hover:underline">
+            <Link
+              to="/"
+              className="inline-block mt-3 text-sm text-primary font-semibold hover:underline"
+            >
               ← Volver al dashboard
             </Link>
           </div>
@@ -76,10 +89,19 @@ function StepPage() {
 // ─────────────────────────────────────────── shared bits ───────────────────
 
 function StepFrame({
-  title, subtitle, children, primary, secondary, wide,
+  title,
+  subtitle,
+  children,
+  primary,
+  secondary,
+  wide,
 }: {
-  title: string; subtitle: string; children: React.ReactNode;
-  primary?: React.ReactNode; secondary?: React.ReactNode; wide?: boolean;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+  primary?: React.ReactNode;
+  secondary?: React.ReactNode;
+  wide?: boolean;
 }) {
   return (
     <div className="flex-1 overflow-y-auto bg-surface animate-in-slide">
@@ -101,14 +123,26 @@ function StepFrame({
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground block mb-2">{children}</label>;
+  return (
+    <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground block mb-2">
+      {children}
+    </label>
+  );
 }
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`bg-white border border-border rounded-xl ${className}`}>{children}</div>;
 }
 
-function NextBtn({ projectId, next, children }: { projectId: string; next: StepSlug; children: React.ReactNode }) {
+function NextBtn({
+  projectId,
+  next,
+  children,
+}: {
+  projectId: string;
+  next: StepSlug;
+  children: React.ReactNode;
+}) {
   return (
     <Link
       to="/projects/$id/$step"
@@ -133,7 +167,10 @@ function ContextStep({ project }: { project: Project }) {
     updateProject(project.id, (p) => ({ ...p, study_context: { ...p.study_context, ...patch } }));
   };
   const updateGi = (patch: Partial<GeneralInformation>) => {
-    updateProject(project.id, (p) => ({ ...p, general_information: { ...p.general_information, ...patch } }));
+    updateProject(project.id, (p) => ({
+      ...p,
+      general_information: { ...p.general_information, ...patch },
+    }));
   };
 
   const availableChannels = gi.account ? CHANNELS_BY_ACCOUNT[gi.account as Account] : [];
@@ -145,7 +182,11 @@ function ContextStep({ project }: { project: Project }) {
     <StepFrame
       title="Contexto del estudio"
       subtitle="Cuenta, canal, estructura, perfil de cliente y consideraciones estratégicas. Todo esto alimenta el Prompt Builder."
-      primary={<NextBtn projectId={project.id} next="upload">Guardar y continuar →</NextBtn>}
+      primary={
+        <NextBtn projectId={project.id} next="upload">
+          Guardar y continuar →
+        </NextBtn>
+      }
     >
       <Card className="p-8 space-y-6 mb-6">
         <div>
@@ -155,7 +196,14 @@ function ContextStep({ project }: { project: Project }) {
               <button
                 type="button"
                 key={a}
-                onClick={() => updateGi({ account: a, channels: [], subcategories: [], clientProfileId: undefined })}
+                onClick={() =>
+                  updateGi({
+                    account: a,
+                    channels: [],
+                    subcategories: [],
+                    clientProfileId: undefined,
+                  })
+                }
                 className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${
                   gi.account === a
                     ? "bg-primary text-white border-primary shadow-sm"
@@ -175,7 +223,10 @@ function ContextStep({ project }: { project: Project }) {
             value={gi.channels}
             onChange={(next) => {
               const subs = allSubcategoriesFor(gi.account || undefined, next);
-              updateGi({ channels: next, subcategories: gi.subcategories.filter((s) => subs.includes(s)) });
+              updateGi({
+                channels: next,
+                subcategories: gi.subcategories.filter((s) => subs.includes(s)),
+              });
             }}
             disabled={!gi.account}
             emptyLabel="Selecciona una cuenta primero."
@@ -189,7 +240,9 @@ function ContextStep({ project }: { project: Project }) {
             value={gi.subcategories}
             onChange={(v) => updateGi({ subcategories: v })}
             disabled={gi.channels.length === 0}
-            emptyLabel={gi.account ? "Selecciona al menos un canal." : "Selecciona una cuenta primero."}
+            emptyLabel={
+              gi.account ? "Selecciona al menos un canal." : "Selecciona una cuenta primero."
+            }
           />
         </div>
 
@@ -203,7 +256,9 @@ function ContextStep({ project }: { project: Project }) {
             >
               <option value="">(sin estructura)</option>
               {structures.map((s) => (
-                <option key={s.id} value={s.id}>{s.name} · {s.studyType}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name} · {s.studyType}
+                </option>
               ))}
             </select>
           </div>
@@ -216,7 +271,9 @@ function ContextStep({ project }: { project: Project }) {
             >
               <option value="">(sin perfil)</option>
               {filteredProfiles.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.account})</option>
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.account})
+                </option>
               ))}
             </select>
           </div>
@@ -231,17 +288,30 @@ function ContextStep({ project }: { project: Project }) {
             >
               <option value="">(sin identidad)</option>
               {availableVI.map((v) => (
-                <option key={v.id} value={v.id}>{v.name} ({v.account})</option>
+                <option key={v.id} value={v.id}>
+                  {v.name} ({v.account})
+                </option>
               ))}
             </select>
             {gi.visualIdentityId && (
               <div className="flex items-center gap-1">
-                {(availableVI.find((v) => v.id === gi.visualIdentityId)?.colors ?? []).slice(0, 6).map((c, i) => (
-                  <span key={i} className="size-6 rounded border border-border" style={{ background: c }} title={c} />
-                ))}
+                {(availableVI.find((v) => v.id === gi.visualIdentityId)?.colors ?? [])
+                  .slice(0, 6)
+                  .map((c, i) => (
+                    <span
+                      key={i}
+                      className="size-6 rounded border border-border"
+                      style={{ background: c }}
+                      title={c}
+                    />
+                  ))}
               </div>
             )}
-            <Link to="/templates" search={{ tab: "visual" }} className="text-[11px] font-semibold text-primary hover:underline">
+            <Link
+              to="/templates"
+              search={{ tab: "visual" }}
+              className="text-[11px] font-semibold text-primary hover:underline"
+            >
               Administrar en Template Library →
             </Link>
           </div>
@@ -264,7 +334,10 @@ function ContextStep({ project }: { project: Project }) {
           <Label>Objetivos específicos</Label>
           <div className="space-y-2">
             {ctx.specificObjectives.map((o, i) => (
-              <div key={i} className="flex items-start gap-3 bg-surface border border-border rounded-lg px-3 py-2">
+              <div
+                key={i}
+                className="flex items-start gap-3 bg-surface border border-border rounded-lg px-3 py-2"
+              >
                 <span className="text-[10px] font-mono text-muted-foreground mt-1">{i + 1}.</span>
                 <input
                   value={o}
@@ -277,7 +350,9 @@ function ContextStep({ project }: { project: Project }) {
                 />
                 <button
                   type="button"
-                  onClick={() => update({ specificObjectives: ctx.specificObjectives.filter((_, j) => j !== i) })}
+                  onClick={() =>
+                    update({ specificObjectives: ctx.specificObjectives.filter((_, j) => j !== i) })
+                  }
                   className="text-muted-foreground hover:text-destructive text-xs"
                 >
                   ✕
@@ -315,7 +390,8 @@ function ContextStep({ project }: { project: Project }) {
             className="w-full bg-white border border-primary/30 bg-primary/5 rounded-lg px-4 py-3 text-sm outline-none resize-none"
           />
           <p className="text-[11px] text-muted-foreground mt-1.5">
-            Instrucciones que modifican tono, foco y profundidad. Se inyectan en el prompt de análisis.
+            Instrucciones que modifican tono, foco y profundidad. Se inyectan en el prompt de
+            análisis.
           </p>
         </div>
 
@@ -360,7 +436,9 @@ function TemplateReferences({ project }: { project: Project }) {
       general_information: { ...p.general_information, selectedTemplateIds: next },
     }));
   };
-  const forAccount = templates.filter((t) => t.kind === "presentation" && (!gi.account || t.account === gi.account));
+  const forAccount = templates.filter(
+    (t) => t.kind === "presentation" && (!gi.account || t.account === gi.account),
+  );
   const slideTypes = templates.filter((t) => t.kind === "slide");
 
   return (
@@ -368,8 +446,11 @@ function TemplateReferences({ project }: { project: Project }) {
       <div>
         <Label>Referencias visuales · presentaciones</Label>
         <p className="text-[11px] text-muted-foreground mb-3">
-          Selecciona decks de la <Link to="/templates" className="underline">Template Library</Link> como
-          inspiración. No se copian literalmente; el prompt indica "usar como referencia".
+          Selecciona decks de la{" "}
+          <Link to="/templates" className="underline">
+            Template Library
+          </Link>{" "}
+          como inspiración. No se copian literalmente; el prompt indica "usar como referencia".
         </p>
         <div className="flex flex-wrap gap-2">
           {forAccount.map((t) => (
@@ -388,7 +469,9 @@ function TemplateReferences({ project }: { project: Project }) {
             </button>
           ))}
           {forAccount.length === 0 && (
-            <div className="text-xs text-muted-foreground italic">Sin presentaciones para esta cuenta.</div>
+            <div className="text-xs text-muted-foreground italic">
+              Sin presentaciones para esta cuenta.
+            </div>
           )}
         </div>
       </div>
@@ -416,9 +499,6 @@ function TemplateReferences({ project }: { project: Project }) {
   );
 }
 
-
-
-
 // ─────────────────────────────────────────── Carga ──────────────────────
 
 function UploadStep({ project }: { project: Project }) {
@@ -435,7 +515,9 @@ function UploadStep({ project }: { project: Project }) {
     // Cache bytes in-memory for the real Excel engine.
     Array.from(list).forEach((f) => {
       if (/xlsx?|csv/i.test(f.name)) {
-        f.arrayBuffer().then((buf) => putFileBytes(project.id, f.name, buf)).catch(() => {});
+        f.arrayBuffer()
+          .then((buf) => putFileBytes(project.id, f.name, buf))
+          .catch(() => {});
       }
     });
     updateProject(project.id, (p) => ({ ...p, uploaded_files: [...p.uploaded_files, ...added] }));
@@ -445,7 +527,11 @@ function UploadStep({ project }: { project: Project }) {
     <StepFrame
       title="Carga de información"
       subtitle="Adjunta los archivos de la investigación (referencia local — no se sube a ningún servidor)."
-      primary={<NextBtn projectId={project.id} next="validation">Continuar →</NextBtn>}
+      primary={
+        <NextBtn projectId={project.id} next="validation">
+          Continuar →
+        </NextBtn>
+      }
     >
       <div className="grid grid-cols-3 gap-6">
         <Card className="col-span-2 p-6">
@@ -456,8 +542,12 @@ function UploadStep({ project }: { project: Project }) {
               className="hidden"
               onChange={(e) => onFiles(e.target.files)}
             />
-            <div className="mx-auto size-12 rounded-full bg-primary/5 text-primary flex items-center justify-center text-xl mb-3">↑</div>
-            <p className="font-semibold text-sm">Arrastra archivos aquí o haz click para seleccionar</p>
+            <div className="mx-auto size-12 rounded-full bg-primary/5 text-primary flex items-center justify-center text-xl mb-3">
+              ↑
+            </div>
+            <p className="font-semibold text-sm">
+              Arrastra archivos aquí o haz click para seleccionar
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               Formatos aceptados: .xlsx, .csv, .pdf, .docx · solo referencia local
             </p>
@@ -465,10 +555,15 @@ function UploadStep({ project }: { project: Project }) {
 
           <div className="mt-6 space-y-3">
             {files.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4">Aún no cargaste archivos.</p>
+              <p className="text-xs text-muted-foreground text-center py-4">
+                Aún no cargaste archivos.
+              </p>
             )}
             {files.map((f, i) => (
-              <div key={i} className="flex items-center gap-4 bg-surface border border-border rounded-lg p-3">
+              <div
+                key={i}
+                className="flex items-center gap-4 bg-surface border border-border rounded-lg p-3"
+              >
                 <div className="size-10 rounded bg-white border border-border flex items-center justify-center text-[10px] font-bold text-muted-foreground">
                   {f.kind}
                 </div>
@@ -499,9 +594,18 @@ function UploadStep({ project }: { project: Project }) {
         <Card className="p-6 h-fit">
           <h3 className="text-sm font-semibold mb-3">Buenas prácticas</h3>
           <ul className="space-y-3 text-xs text-muted-foreground">
-            <li className="flex gap-2"><span className="text-primary font-bold">·</span> Adjunta el diccionario de variables para mejor interpretación por Claude.</li>
-            <li className="flex gap-2"><span className="text-primary font-bold">·</span> Los nombres se incluirán en el prompt para dar contexto al modelo.</li>
-            <li className="flex gap-2"><span className="text-primary font-bold">·</span> No es necesario subir realmente los archivos: solo se registra el nombre.</li>
+            <li className="flex gap-2">
+              <span className="text-primary font-bold">·</span> Adjunta el diccionario de variables
+              para mejor interpretación por Claude.
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary font-bold">·</span> Los nombres se incluirán en el
+              prompt para dar contexto al modelo.
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary font-bold">·</span> No es necesario subir realmente los
+              archivos: solo se registra el nombre.
+            </li>
           </ul>
         </Card>
       </div>
@@ -544,6 +648,7 @@ function ExcelEngineCard({ project }: { project: Project }) {
             ranAt: new Date().toISOString(),
             completedStages: result.stagesDone,
             sheetsGenerated: result.sheetsGenerated,
+            summary: result.summary,
           },
         }));
       } catch (e) {
@@ -562,7 +667,9 @@ function ExcelEngineCard({ project }: { project: Project }) {
     setRunning(false);
   };
 
-  const bytesCached = project.uploaded_files.some((f) => /xls|csv/i.test(f.kind) && hasFileBytes(project.id, f.name));
+  const bytesCached = project.uploaded_files.some(
+    (f) => /xls|csv/i.test(f.kind) && hasFileBytes(project.id, f.name),
+  );
 
   return (
     <Card className="p-8 mt-6">
@@ -570,8 +677,9 @@ function ExcelEngineCard({ project }: { project: Project }) {
         <div>
           <h3 className="text-sm font-semibold">Motor de Excel Inteligente</h3>
           <p className="text-[11px] text-muted-foreground mt-1 max-w-xl">
-            Lee el Excel cargado, detecta hojas y variables, y genera un <strong>Excel Analítico</strong>{" "}
-            derivado con fórmulas SUMIF/AVERAGEIF/COUNTIF referenciando la base limpia, KPIs, dashboard e insights.
+            Lee el Excel cargado, detecta hojas y variables, y genera un{" "}
+            <strong>Excel Analítico</strong> derivado con fórmulas SUMIF/AVERAGEIF/COUNTIF
+            referenciando la base limpia, KPIs, dashboard e insights.
           </p>
         </div>
         <div className="flex gap-2">
@@ -580,7 +688,11 @@ function ExcelEngineCard({ project }: { project: Project }) {
             disabled={running || !hasExcel}
             className="px-3 py-2 text-xs font-semibold bg-primary text-white rounded-md disabled:opacity-40"
           >
-            {running ? "Analizando…" : allDone ? "Volver a ejecutar y descargar" : "Ejecutar y descargar analítico"}
+            {running
+              ? "Analizando…"
+              : allDone
+                ? "Volver a ejecutar y descargar"
+                : "Ejecutar y descargar analítico"}
           </button>
           <button
             onClick={() => downloadExcelAnalitico(project)}
@@ -593,7 +705,8 @@ function ExcelEngineCard({ project }: { project: Project }) {
       </div>
       {hasExcel && !bytesCached && (
         <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-2">
-          Los bytes del archivo se perdieron al recargar la página. Vuelve a cargar el .xlsx para regenerar el analítico real.
+          Los bytes del archivo se perdieron al recargar la página. Vuelve a cargar el .xlsx para
+          regenerar el analítico real.
         </p>
       )}
       {!hasExcel && (
@@ -632,8 +745,6 @@ function ExcelEngineCard({ project }: { project: Project }) {
   );
 }
 
-
-
 function inferKind(name: string) {
   const ext = name.toLowerCase().split(".").pop() ?? "";
   if (["xlsx", "xls", "csv"].includes(ext)) return "XLSX";
@@ -652,7 +763,11 @@ function ValidationStep({ project }: { project: Project }) {
       title="Resumen ejecutivo"
       subtitle="Verifica que la información cargada sea correcta antes de generar el prompt."
       wide
-      primary={<NextBtn projectId={project.id} next="prompt">Generar prompt →</NextBtn>}
+      primary={
+        <NextBtn projectId={project.id} next="prompt">
+          Generar prompt →
+        </NextBtn>
+      }
     >
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-4">
@@ -669,13 +784,20 @@ function ValidationStep({ project }: { project: Project }) {
           </Card>
 
           <Card className="p-6">
-            <SectionHead title={`Archivos cargados (${project.uploaded_files.length})`} edit="upload" projectId={project.id} />
+            <SectionHead
+              title={`Archivos cargados (${project.uploaded_files.length})`}
+              edit="upload"
+              projectId={project.id}
+            />
             {project.uploaded_files.length === 0 ? (
               <p className="text-xs text-muted-foreground">No se cargaron archivos.</p>
             ) : (
               <div className="space-y-2">
                 {project.uploaded_files.map((f, i) => (
-                  <div key={i} className="flex items-center justify-between bg-surface rounded-md px-3 py-2 border border-border">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between bg-surface rounded-md px-3 py-2 border border-border"
+                  >
                     <div className="text-sm font-medium font-mono">{f.name}</div>
                     <span className="text-[10px] font-semibold text-emerald-600">OK</span>
                   </div>
@@ -687,10 +809,14 @@ function ValidationStep({ project }: { project: Project }) {
           <Card className="p-6">
             <SectionHead title="Objetivos" edit="context" projectId={project.id} />
             {ctx.specificObjectives.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No se registraron objetivos específicos.</p>
+              <p className="text-xs text-muted-foreground">
+                No se registraron objetivos específicos.
+              </p>
             ) : (
               <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal pl-5">
-                {ctx.specificObjectives.map((o, i) => <li key={i}>{o}</li>)}
+                {ctx.specificObjectives.map((o, i) => (
+                  <li key={i}>{o}</li>
+                ))}
               </ol>
             )}
           </Card>
@@ -698,7 +824,9 @@ function ValidationStep({ project }: { project: Project }) {
 
         <div className="space-y-4">
           <Card className="p-6">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3">Estado</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3">
+              Estado
+            </div>
             <div className="space-y-3">
               <Check ok={!!ctx.objective} label="Objetivo general" />
               <Check ok={ctx.specificObjectives.length > 0} label="Objetivos específicos" />
@@ -709,7 +837,9 @@ function ValidationStep({ project }: { project: Project }) {
           </Card>
 
           <Card className="p-6 bg-primary/5 border-primary/20">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-primary mb-2">Listo</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-primary mb-2">
+              Listo
+            </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               InsightDeck ya puede generar el prompt de análisis para Claude.
             </p>
@@ -729,7 +859,15 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SectionHead({ title, edit, projectId }: { title: string; edit: StepSlug; projectId: string }) {
+function SectionHead({
+  title,
+  edit,
+  projectId,
+}: {
+  title: string;
+  edit: StepSlug;
+  projectId: string;
+}) {
   return (
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-sm font-semibold">{title}</h3>
@@ -747,7 +885,9 @@ function SectionHead({ title, edit, projectId }: { title: string; edit: StepSlug
 function Check({ ok, label }: { ok?: boolean; label: string }) {
   return (
     <div className="flex items-center gap-3 text-xs">
-      <span className={`size-4 rounded-full flex items-center justify-center text-[10px] ${ok ? "bg-emerald-500 text-white" : "border border-border text-muted-foreground"}`}>
+      <span
+        className={`size-4 rounded-full flex items-center justify-center text-[10px] ${ok ? "bg-emerald-500 text-white" : "border border-border text-muted-foreground"}`}
+      >
         {ok ? "✓" : "·"}
       </span>
       <span className={ok ? "text-foreground" : "text-muted-foreground"}>{label}</span>
@@ -767,6 +907,7 @@ function PromptStep({ project }: { project: Project }) {
         profile: getProfile(project.general_information.clientProfileId),
         visualIdentity: getVisualIdentity(project.general_information.visualIdentityId),
         templates: getMany(project.general_information.selectedTemplateIds ?? []),
+        excelSummary: project.excel_analysis?.summary as AnalysisSummary | undefined,
       }),
     [project, getStructure, getProfile, getVisualIdentity, getMany],
   );
@@ -798,13 +939,23 @@ function PromptStep({ project }: { project: Project }) {
       title="Prompt generado para Claude"
       subtitle="Se reconstruye automáticamente con los datos actuales del proyecto. Copia, pégalo en Claude y trae la respuesta JSON."
       wide
-      primary={<NextBtn projectId={project.id} next="import">Ya tengo el JSON →</NextBtn>}
+      primary={
+        <NextBtn projectId={project.id} next="import">
+          Ya tengo el JSON →
+        </NextBtn>
+      }
       secondary={
         <>
-          <button onClick={download} className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface">
+          <button
+            onClick={download}
+            className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface"
+          >
             Descargar .md
           </button>
-          <button onClick={copy} className="px-3 py-2 text-xs font-semibold bg-foreground text-white rounded-md hover:bg-foreground/90">
+          <button
+            onClick={copy}
+            className="px-3 py-2 text-xs font-semibold bg-foreground text-white rounded-md hover:bg-foreground/90"
+          >
             {copied ? "✓ Copiado" : "Copiar prompt"}
           </button>
         </>
@@ -829,19 +980,45 @@ function PromptStep({ project }: { project: Project }) {
 
         <div className="space-y-4">
           <Card className="p-6">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-4">Cómo continuar</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-4">
+              Cómo continuar
+            </div>
             <ol className="space-y-4 text-xs">
               <StepGuide n={1} title="Copia el prompt" text="Botón superior derecho." />
               <StepGuide n={2} title="Ábrelo en Claude" text="Recomendado: Sonnet 4 o superior." />
-              <StepGuide n={3} title="Adjunta tus Excel" text="Los mismos archivos cargados aquí." />
-              <StepGuide n={4} title="Pega la respuesta" text="En el paso siguiente, Importar JSON." />
+              <StepGuide
+                n={3}
+                title="Adjunta el Excel"
+                text="Igual, adjúntalo — Claude puede leerlo aunque ya tenga los cruces calculados."
+              />
+              <StepGuide
+                n={4}
+                title="Pega la respuesta"
+                text="En el paso siguiente, Importar JSON."
+              />
             </ol>
           </Card>
 
+          {!project.excel_analysis?.summary && (
+            <Card className="p-6 bg-amber-50 border-amber-200">
+              <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 mb-2">
+                Recomendado antes de continuar
+              </div>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Aún no ejecutaste el <strong>Motor de Excel Inteligente</strong> (más abajo en el
+                paso de Contexto). Ejecútalo primero: así el prompt incluye los cruces y
+                distribuciones ya calculados, y Claude no tiene que adivinarlos.
+              </p>
+            </Card>
+          )}
+
           <Card className="p-6 bg-amber-50 border-amber-200">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 mb-2">Importante</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 mb-2">
+              Importante
+            </div>
             <p className="text-xs text-amber-800 leading-relaxed">
-              Claude solo debe devolver JSON. InsightDeck no acepta texto libre en el paso de importación.
+              Claude solo debe devolver JSON. InsightDeck no acepta texto libre en el paso de
+              importación.
             </p>
           </Card>
         </div>
@@ -853,7 +1030,9 @@ function PromptStep({ project }: { project: Project }) {
 function StepGuide({ n, title, text }: { n: number; title: string; text: string }) {
   return (
     <li className="flex gap-3">
-      <span className="size-6 shrink-0 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">{n}</span>
+      <span className="size-6 shrink-0 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center">
+        {n}
+      </span>
       <div>
         <div className="font-semibold">{title}</div>
         <div className="text-muted-foreground mt-0.5">{text}</div>
@@ -917,8 +1096,12 @@ function ImportStep({ project }: { project: Project }) {
             <div className="bg-slate-900 px-4 py-2 flex items-center justify-between">
               <span className="text-white/60 text-[10px] font-mono">respuesta_claude.json</span>
               {validation && (
-                <span className={`text-[10px] font-bold ${validation.ok ? "text-emerald-400" : "text-rose-400"}`}>
-                  {validation.ok ? `✓ VÁLIDO · ${validation.slides.length} SLIDES` : `✕ ${validation.errors.length} ERROR(ES)`}
+                <span
+                  className={`text-[10px] font-bold ${validation.ok ? "text-emerald-400" : "text-rose-400"}`}
+                >
+                  {validation.ok
+                    ? `✓ VÁLIDO · ${validation.slides.length} SLIDES`
+                    : `✕ ${validation.errors.length} ERROR(ES)`}
                 </span>
               )}
             </div>
@@ -933,7 +1116,12 @@ function ImportStep({ project }: { project: Project }) {
           <div className="flex items-center gap-3">
             <label className="px-3 py-2 text-xs font-semibold border border-border rounded-md hover:bg-surface bg-white cursor-pointer">
               📎 Cargar archivo .json
-              <input type="file" accept="application/json,.json" className="hidden" onChange={onFile} />
+              <input
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={onFile}
+              />
             </label>
             <button
               onClick={pasteFromClipboard}
@@ -947,13 +1135,17 @@ function ImportStep({ project }: { project: Project }) {
             >
               Limpiar
             </button>
-            <span className="text-[11px] text-muted-foreground ml-auto">Validación en tiempo real</span>
+            <span className="text-[11px] text-muted-foreground ml-auto">
+              Validación en tiempo real
+            </span>
           </div>
         </div>
 
         <div className="space-y-4">
           <Card className="p-6">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-4">Diagnóstico</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-4">
+              Diagnóstico
+            </div>
             {!validation ? (
               <p className="text-xs text-muted-foreground">Pega o carga un JSON para validar.</p>
             ) : validation.ok ? (
@@ -977,7 +1169,10 @@ function ImportStep({ project }: { project: Project }) {
             ) : (
               <div className="space-y-2">
                 {validation.errors.map((e, i) => (
-                  <div key={i} className="text-[11px] bg-rose-50 border border-rose-100 text-rose-700 rounded px-3 py-2 font-mono">
+                  <div
+                    key={i}
+                    className="text-[11px] bg-rose-50 border border-rose-100 text-rose-700 rounded px-3 py-2 font-mono"
+                  >
                     {e}
                   </div>
                 ))}
@@ -1035,7 +1230,11 @@ function ReviewStep({ project }: { project: Project }) {
       <StepFrame
         title="Revisión editorial"
         subtitle="Aún no importaste una respuesta de Claude."
-        primary={<NextBtn projectId={project.id} next="import">Ir a importar JSON →</NextBtn>}
+        primary={
+          <NextBtn projectId={project.id} next="import">
+            Ir a importar JSON →
+          </NextBtn>
+        }
       >
         <Card className="p-10 text-center">
           <p className="text-sm text-muted-foreground">No hay slides para revisar.</p>
@@ -1053,13 +1252,18 @@ function ReviewStep({ project }: { project: Project }) {
             <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Slide Deck ({slides.length})
             </h2>
-            <NextBtn projectId={project.id} next="export">Exportar →</NextBtn>
+            <NextBtn projectId={project.id} next="export">
+              Exportar →
+            </NextBtn>
           </div>
           <div className="text-[10px] text-muted-foreground mb-2">
             Aprobadas · {approvedCount}/{slides.length}
           </div>
           <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            <div
+              className="h-full bg-emerald-500 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
 
@@ -1069,7 +1273,9 @@ function ReviewStep({ project }: { project: Project }) {
               key={i}
               onClick={() => setActiveIdx(i)}
               className={`w-full text-left cursor-pointer rounded-lg p-2 transition-all ${
-                i === activeIdx ? "ring-2 ring-primary bg-white" : "hover:bg-surface ring-1 ring-transparent"
+                i === activeIdx
+                  ? "ring-2 ring-primary bg-white"
+                  : "hover:bg-surface ring-1 ring-transparent"
               }`}
             >
               <SlideMini slide={s} />
@@ -1080,7 +1286,9 @@ function ReviewStep({ project }: { project: Project }) {
                   </span>
                   <StateBadge state={s.status ?? "pending"} />
                 </div>
-                <p className={`text-xs font-medium truncate ${i === activeIdx ? "" : "text-muted-foreground"}`}>
+                <p
+                  className={`text-xs font-medium truncate ${i === activeIdx ? "" : "text-muted-foreground"}`}
+                >
                   {String(i + 1).padStart(2, "0")} · {s.title}
                 </p>
               </div>
@@ -1096,9 +1304,24 @@ function ReviewStep({ project }: { project: Project }) {
             <SlidePreview slide={slide} index={activeIdx + 1} />
 
             <div className="flex items-center gap-2">
-              <button onClick={() => move(activeIdx, -1)} disabled={activeIdx === 0} className="px-3 py-1.5 text-xs border border-border rounded-md hover:bg-white disabled:opacity-40">← Mover arriba</button>
-              <button onClick={() => move(activeIdx, 1)} disabled={activeIdx === slides.length - 1} className="px-3 py-1.5 text-xs border border-border rounded-md hover:bg-white disabled:opacity-40">Mover abajo →</button>
-              <button onClick={() => removeSlide(activeIdx)} className="ml-auto px-3 py-1.5 text-xs border border-border text-destructive rounded-md hover:bg-rose-50">
+              <button
+                onClick={() => move(activeIdx, -1)}
+                disabled={activeIdx === 0}
+                className="px-3 py-1.5 text-xs border border-border rounded-md hover:bg-white disabled:opacity-40"
+              >
+                ← Mover arriba
+              </button>
+              <button
+                onClick={() => move(activeIdx, 1)}
+                disabled={activeIdx === slides.length - 1}
+                className="px-3 py-1.5 text-xs border border-border rounded-md hover:bg-white disabled:opacity-40"
+              >
+                Mover abajo →
+              </button>
+              <button
+                onClick={() => removeSlide(activeIdx)}
+                className="ml-auto px-3 py-1.5 text-xs border border-border text-destructive rounded-md hover:bg-rose-50"
+              >
                 Eliminar slide
               </button>
             </div>
@@ -1136,7 +1359,9 @@ function ReviewStep({ project }: { project: Project }) {
                   <Label>Implicancia de negocio</Label>
                   <textarea
                     value={slide.business_implication ?? ""}
-                    onChange={(e) => updateSlide(activeIdx, { business_implication: e.target.value })}
+                    onChange={(e) =>
+                      updateSlide(activeIdx, { business_implication: e.target.value })
+                    }
                     rows={3}
                     className="w-full bg-white border border-border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"
                   />
@@ -1146,8 +1371,13 @@ function ReviewStep({ project }: { project: Project }) {
                     <Label>Métricas</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {slide.metrics.map((m, i) => (
-                        <div key={i} className="bg-white border border-border rounded-lg p-3 text-xs">
-                          <div className="font-semibold text-muted-foreground uppercase text-[10px]">{m.label}</div>
+                        <div
+                          key={i}
+                          className="bg-white border border-border rounded-lg p-3 text-xs"
+                        >
+                          <div className="font-semibold text-muted-foreground uppercase text-[10px]">
+                            {m.label}
+                          </div>
                           <div className="text-lg font-bold text-primary">{m.value}</div>
                           {m.delta && <div className="text-[11px] text-emerald-600">{m.delta}</div>}
                         </div>
@@ -1159,7 +1389,9 @@ function ReviewStep({ project }: { project: Project }) {
 
               <div className="space-y-4">
                 <Card className="p-5 space-y-4">
-                  <div className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">Validación</div>
+                  <div className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">
+                    Validación
+                  </div>
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => updateSlide(activeIdx, { status: "approved" })}
@@ -1188,14 +1420,20 @@ function ReviewStep({ project }: { project: Project }) {
                       Insights de apoyo
                     </div>
                     <ul className="text-xs space-y-2 text-muted-foreground list-disc pl-4">
-                      {slide.supporting_insights.map((it, i) => <li key={i}>{it}</li>)}
+                      {slide.supporting_insights.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
                     </ul>
                   </Card>
                 )}
 
-                <AiConsiderationsCard project={project} slide={slide} activeIdx={activeIdx} updateSlide={updateSlide} />
+                <AiConsiderationsCard
+                  project={project}
+                  slide={slide}
+                  activeIdx={activeIdx}
+                  updateSlide={updateSlide}
+                />
               </div>
-
             </div>
           </div>
         </div>
@@ -1215,52 +1453,83 @@ function AiConsiderationsCard({
   activeIdx: number;
   updateSlide: (idx: number, patch: Partial<SlideData>) => void;
 }) {
-  const rewrite = useServerFn(rewriteSlideWithAI);
-  const [loading, setLoading] = useState(false);
+  interface SlideRewritePreview {
+    updated_title: string;
+    updated_insight: string;
+    updated_business_implication: string;
+    updated_visual_direction: string;
+    change_summary: string;
+  }
+
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<Awaited<ReturnType<typeof rewrite>> | null>(null);
+  const [preview, setPreview] = useState<SlideRewritePreview | null>(null);
   const [instructions, setInstructions] = useState("");
+  const [pasteBox, setPasteBox] = useState("");
+  const [copied, setCopied] = useState(false);
   const considerations = project.study_context.considerations ?? "";
   const gi = project.general_information;
   const { getVisualIdentity } = useTemplates();
   const vi = getVisualIdentity(gi.visualIdentityId);
 
-  const generate = async () => {
+  const rewritePrompt = useMemo(() => {
     const combined = instructions.trim() || considerations.trim();
-    if (!combined) {
-      setError("Escribe instrucciones específicas para esta diapositiva (o agrega consideraciones en Contexto).");
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    setPreview(null);
+    return `Eres un editor senior de storytelling ejecutivo para presentaciones de investigación de mercados.
+
+CONTEXTO DEL PROYECTO:
+- Cuenta: ${gi.account || "n/d"}
+- Canales: ${gi.channels.join(", ") || "n/d"}
+- Subcategorías: ${gi.subcategories.join(", ") || "n/d"}
+- Objetivo: ${project.study_context.objective || "n/d"}
+${vi ? `- Visual Identity: ${vi.name} (paleta HEX: ${vi.colors.join(", ")})` : ""}
+
+SLIDE ACTUAL (esta es la ÚNICA diapositiva a modificar; no toques el resto de la presentación):
+- Tipo: ${slide.slide_type}
+- Título: ${slide.title}
+- Subtítulo: ${slide.subtitle ?? ""}
+- Insight principal: ${slide.main_insight ?? ""}
+- Implicancia de negocio: ${slide.business_implication ?? ""}
+- Insights de apoyo: ${(slide.supporting_insights ?? []).join(" | ")}
+
+CONSIDERACIONES / INSTRUCCIONES PARA ESTE CAMBIO:
+"""
+${combined || "(sin instrucciones específicas — mejora claridad y foco ejecutivo)"}
+"""
+
+Reescribe SOLO esta diapositiva. Mantén precisión de datos, tono ejecutivo y titulares de máx 90 caracteres.
+Responde ÚNICAMENTE con un JSON válido, sin markdown, con esta forma exacta:
+{"updated_title": "...", "updated_insight": "...", "updated_business_implication": "...", "updated_visual_direction": "...", "change_summary": "..."}`;
+  }, [instructions, considerations, gi, project.study_context.objective, vi, slide]);
+
+  const copyPrompt = async () => {
     try {
-      const result = await rewrite({
-        data: {
-          considerations: considerations || instructions,
-          instructions: instructions.trim() || undefined,
-          slide: {
-            slide_type: slide.slide_type,
-            title: slide.title,
-            subtitle: slide.subtitle,
-            main_insight: slide.main_insight,
-            business_implication: slide.business_implication,
-            supporting_insights: slide.supporting_insights,
-          },
-          projectContext: {
-            account: gi.account || undefined,
-            channels: gi.channels,
-            subcategories: gi.subcategories,
-            objective: project.study_context.objective,
-            visualIdentity: vi ? { name: vi.name, colors: vi.colors } : undefined,
-          },
-        },
+      await navigator.clipboard.writeText(rewritePrompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const applyPaste = () => {
+    setError(null);
+    try {
+      let clean = pasteBox.trim();
+      const fence = clean.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+      if (fence) clean = fence[1];
+      const parsed = JSON.parse(clean) as Partial<SlideRewritePreview>;
+      if (!parsed.updated_title || !parsed.updated_insight) {
+        setError("El JSON no tiene los campos esperados (updated_title, updated_insight, ...).");
+        return;
+      }
+      setPreview({
+        updated_title: parsed.updated_title,
+        updated_insight: parsed.updated_insight,
+        updated_business_implication: parsed.updated_business_implication ?? "",
+        updated_visual_direction: parsed.updated_visual_direction ?? "",
+        change_summary: parsed.change_summary ?? "Diapositiva actualizada.",
       });
-      setPreview(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
+      setError(`JSON inválido: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -1289,6 +1558,7 @@ function AiConsiderationsCard({
       revision_history: [...(slide.revision_history ?? []), revision],
     });
     setPreview(null);
+    setPasteBox("");
   };
 
   const saveWithoutApply = () => {
@@ -1302,6 +1572,7 @@ function AiConsiderationsCard({
       revision_history: [...(slide.revision_history ?? []), revision],
     });
     setPreview(null);
+    setPasteBox("");
   };
 
   return (
@@ -1312,13 +1583,15 @@ function AiConsiderationsCard({
         </div>
         {slide.revision_history && slide.revision_history.length > 0 && (
           <span className="text-[10px] text-muted-foreground">
-            {slide.revision_history.length} revisión{slide.revision_history.length === 1 ? "" : "es"}
+            {slide.revision_history.length} revisión
+            {slide.revision_history.length === 1 ? "" : "es"}
           </span>
         )}
       </div>
       <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
-        Escribe instrucciones específicas (cambia el insight, mejora el título, resume, sugiere otro gráfico…).
-        La IA modifica ÚNICAMENTE esta diapositiva.
+        Escribe instrucciones específicas (cambia el insight, mejora el título, resume, sugiere otro
+        gráfico…), copia el prompt, pégalo en tu conversación con Claude, y trae de vuelta el JSON.
+        Modifica ÚNICAMENTE esta diapositiva.
       </p>
       <textarea
         value={instructions}
@@ -1328,11 +1601,24 @@ function AiConsiderationsCard({
         className="w-full bg-white border border-border rounded-md px-3 py-2 text-xs resize-none outline-none mb-2"
       />
       <button
-        onClick={generate}
-        disabled={loading || (!instructions.trim() && !considerations.trim())}
-        className="w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg disabled:opacity-40 mb-2"
+        onClick={copyPrompt}
+        className="w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg mb-2"
       >
-        {loading ? "Actualizando…" : "Actualizar diapositiva con IA"}
+        {copied ? "✓ Copiado — pégalo en Claude" : "Copiar prompt de esta diapositiva"}
+      </button>
+      <textarea
+        value={pasteBox}
+        onChange={(e) => setPasteBox(e.target.value)}
+        rows={3}
+        placeholder="Pega aquí el JSON que te devuelva Claude…"
+        className="w-full bg-white border border-border rounded-md px-3 py-2 text-xs resize-none outline-none mb-2 font-mono"
+      />
+      <button
+        onClick={applyPaste}
+        disabled={!pasteBox.trim()}
+        className="w-full py-2 text-xs font-semibold border border-border rounded-lg disabled:opacity-40 mb-2 hover:bg-surface"
+      >
+        Procesar respuesta
       </button>
       {error && (
         <div className="text-[11px] bg-rose-50 border border-rose-200 text-rose-700 rounded px-2 py-1.5 mt-2">
@@ -1346,22 +1632,36 @@ function AiConsiderationsCard({
             <div className="text-xs font-medium">{preview.updated_title}</div>
           </div>
           <div>
-            <div className="text-[9px] font-bold uppercase text-muted-foreground">Nuevo insight</div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">
+              Nuevo insight
+            </div>
             <div className="text-xs text-muted-foreground">{preview.updated_insight}</div>
           </div>
           <div>
             <div className="text-[9px] font-bold uppercase text-muted-foreground">Implicancia</div>
-            <div className="text-xs text-muted-foreground">{preview.updated_business_implication}</div>
+            <div className="text-xs text-muted-foreground">
+              {preview.updated_business_implication}
+            </div>
           </div>
           <div>
-            <div className="text-[9px] font-bold uppercase text-muted-foreground">Dirección visual</div>
-            <div className="text-xs text-muted-foreground italic">{preview.updated_visual_direction}</div>
+            <div className="text-[9px] font-bold uppercase text-muted-foreground">
+              Dirección visual
+            </div>
+            <div className="text-xs text-muted-foreground italic">
+              {preview.updated_visual_direction}
+            </div>
           </div>
           <div className="flex gap-2 pt-2 border-t border-border">
-            <button onClick={apply} className="flex-1 py-1.5 text-[11px] font-semibold bg-emerald-600 text-white rounded">
+            <button
+              onClick={apply}
+              className="flex-1 py-1.5 text-[11px] font-semibold bg-emerald-600 text-white rounded"
+            >
               Aplicar cambio
             </button>
-            <button onClick={saveWithoutApply} className="flex-1 py-1.5 text-[11px] font-semibold border border-border rounded">
+            <button
+              onClick={saveWithoutApply}
+              className="flex-1 py-1.5 text-[11px] font-semibold border border-border rounded"
+            >
               Guardar sin aplicar
             </button>
           </div>
@@ -1373,15 +1673,21 @@ function AiConsiderationsCard({
             Historial de revisiones
           </summary>
           <ul className="mt-2 space-y-1.5">
-            {slide.revision_history.slice().reverse().map((r, i) => (
-              <li key={i} className="text-[10px] text-muted-foreground bg-white border border-border rounded p-2">
-                <div className="flex justify-between mb-0.5">
-                  <span className="font-semibold">{r.by === "ai" ? "🤖 IA" : "👤 Usuario"}</span>
-                  <span>{new Date(r.at).toLocaleString()}</span>
-                </div>
-                {r.summary}
-              </li>
-            ))}
+            {slide.revision_history
+              .slice()
+              .reverse()
+              .map((r, i) => (
+                <li
+                  key={i}
+                  className="text-[10px] text-muted-foreground bg-white border border-border rounded p-2"
+                >
+                  <div className="flex justify-between mb-0.5">
+                    <span className="font-semibold">{r.by === "ai" ? "🤖 IA" : "👤 Usuario"}</span>
+                    <span>{new Date(r.at).toLocaleString()}</span>
+                  </div>
+                  {r.summary}
+                </li>
+              ))}
           </ul>
         </details>
       )}
@@ -1390,11 +1696,12 @@ function AiConsiderationsCard({
 }
 
 function ConfigRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-
   return (
     <div className="flex items-center justify-between text-[11px]">
       <span className="text-muted-foreground">{label}</span>
-      <span className={`font-semibold ${mono ? "font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded" : ""}`}>
+      <span
+        className={`font-semibold ${mono ? "font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded" : ""}`}
+      >
         {value}
       </span>
     </div>
@@ -1425,7 +1732,8 @@ function SlidePreview({ slide, index }: { slide: SlideData; index: number }) {
       <div className="absolute top-6 left-8 flex items-center gap-3">
         <div className="size-6 bg-primary rounded" />
         <div className="text-[10px] font-bold tracking-tighter">
-          {(slide.recommended_layout ?? slide.slide_type).toUpperCase()} · SLIDE {String(index).padStart(2, "0")}
+          {(slide.recommended_layout ?? slide.slide_type).toUpperCase()} · SLIDE{" "}
+          {String(index).padStart(2, "0")}
         </div>
       </div>
       <div className="absolute inset-0 flex items-center justify-center px-20">
@@ -1433,7 +1741,9 @@ function SlidePreview({ slide, index }: { slide: SlideData; index: number }) {
           <div className="inline-block px-3 py-1 bg-primary/5 text-primary text-[10px] font-bold rounded-full uppercase tracking-wider">
             {slide.slide_type}
           </div>
-          <h3 className="text-[26px] font-bold tracking-tight leading-[1.15] text-balance">{slide.title}</h3>
+          <h3 className="text-[26px] font-bold tracking-tight leading-[1.15] text-balance">
+            {slide.title}
+          </h3>
           {slide.subtitle && <p className="text-sm text-muted-foreground">{slide.subtitle}</p>}
           <p className="text-muted-foreground text-sm text-pretty">{slide.main_insight}</p>
           {slide.metrics && slide.metrics.length > 0 && (
@@ -1466,7 +1776,11 @@ function SlideThumbGraphic({ type, large }: { type: string; large?: boolean }) {
     return (
       <div className={`flex flex-col items-center justify-center gap-1 ${h} p-3`}>
         {bars.map((w, i) => (
-          <div key={i} className="bg-primary/70 rounded-sm" style={{ width: `${w * 100}%`, height: large ? 12 : 5 }} />
+          <div
+            key={i}
+            className="bg-primary/70 rounded-sm"
+            style={{ width: `${w * 100}%`, height: large ? 12 : 5 }}
+          />
         ))}
       </div>
     );
@@ -1475,7 +1789,11 @@ function SlideThumbGraphic({ type, large }: { type: string; large?: boolean }) {
     return (
       <div className={`grid grid-cols-6 gap-0.5 ${h} p-3`}>
         {Array.from({ length: 24 }).map((_, i) => (
-          <div key={i} className="rounded-sm" style={{ backgroundColor: `rgba(37,99,235,${0.15 + (i % 6) * 0.13})` }} />
+          <div
+            key={i}
+            className="rounded-sm"
+            style={{ backgroundColor: `rgba(37,99,235,${0.15 + (i % 6) * 0.13})` }}
+          />
         ))}
       </div>
     );
@@ -1496,7 +1814,11 @@ function SlideThumbGraphic({ type, large }: { type: string; large?: boolean }) {
     return (
       <div className={`flex items-end gap-1 ${h} p-3`}>
         {[0.4, 0.55, 0.6, 0.45, 0.7, 0.5].map((v, i) => (
-          <div key={i} className="flex-1 bg-primary/60 rounded-t-sm" style={{ height: `${v * 80}%` }} />
+          <div
+            key={i}
+            className="flex-1 bg-primary/60 rounded-t-sm"
+            style={{ height: `${v * 80}%` }}
+          />
         ))}
       </div>
     );
@@ -1517,7 +1839,10 @@ function SlideThumbGraphic({ type, large }: { type: string; large?: boolean }) {
       {[0.9, 0.75, 0.6, 0.45, 0.3].map((w, i) => (
         <div key={i} className="flex items-center gap-1">
           <div className="w-4 h-1 bg-slate-300 rounded-full" />
-          <div className="bg-primary/70 rounded-sm" style={{ width: `${w * 100}%`, height: large ? 8 : 4 }} />
+          <div
+            className="bg-primary/70 rounded-sm"
+            style={{ width: `${w * 100}%`, height: large ? 8 : 4 }}
+          />
         </div>
       ))}
     </div>
@@ -1548,7 +1873,7 @@ function ExportStep({ project }: { project: Project }) {
   const downloadJson = () => {
     const blob = new Blob(
       [JSON.stringify({ project: project.general_information.name, slides }, null, 2)],
-      { type: "application/json" }
+      { type: "application/json" },
     );
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1581,7 +1906,10 @@ function ExportStep({ project }: { project: Project }) {
             <div className="grid grid-cols-4 gap-3">
               <MiniStat label="Slides" value={String(slides.length)} />
               <MiniStat label="Aprobadas" value={String(approved)} />
-              <MiniStat label="Tipos" value={String(new Set(slides.map((s) => s.slide_type)).size)} />
+              <MiniStat
+                label="Tipos"
+                value={String(new Set(slides.map((s) => s.slide_type)).size)}
+              />
               <MiniStat label="Archivos" value={String(project.uploaded_files.length)} />
             </div>
           </Card>
@@ -1593,13 +1921,20 @@ function ExportStep({ project }: { project: Project }) {
             ) : (
               <ol className="space-y-2">
                 {slides.map((s, i) => (
-                  <li key={i} className="flex items-center gap-4 text-sm border-b border-border/60 last:border-0 py-2">
+                  <li
+                    key={i}
+                    className="flex items-center gap-4 text-sm border-b border-border/60 last:border-0 py-2"
+                  >
                     <span className="text-[10px] font-mono text-muted-foreground w-6">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-[10px] font-bold uppercase text-muted-foreground w-20">{s.slide_type}</span>
+                    <span className="text-[10px] font-bold uppercase text-muted-foreground w-20">
+                      {s.slide_type}
+                    </span>
                     <span className="flex-1 truncate">{s.title}</span>
-                    <span className={`text-[10px] font-medium ${s.status === "approved" ? "text-emerald-600" : "text-amber-600"}`}>
+                    <span
+                      className={`text-[10px] font-medium ${s.status === "approved" ? "text-emerald-600" : "text-amber-600"}`}
+                    >
                       {s.status === "approved" ? "✓" : "•"}
                     </span>
                   </li>
@@ -1611,7 +1946,9 @@ function ExportStep({ project }: { project: Project }) {
 
         <div className="space-y-4">
           <Card className="p-6 bg-gradient-to-br from-primary to-primary-hover text-white">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-white/80 mb-2">Entregable final</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-white/80 mb-2">
+              Entregable final
+            </div>
             <div className="text-3xl font-bold tracking-tight mb-1">.pptx</div>
             <p className="text-xs text-white/80 leading-relaxed mb-4">
               Presentación completamente editable en Microsoft PowerPoint.
@@ -1640,11 +1977,13 @@ function ExportStep({ project }: { project: Project }) {
             >
               ⬇ Descargar JSON del proyecto
             </button>
-            <Link to="/" className="block text-center py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
+            <Link
+              to="/"
+              className="block text-center py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
               Volver al dashboard
             </Link>
           </Card>
-
         </div>
       </div>
     </StepFrame>
